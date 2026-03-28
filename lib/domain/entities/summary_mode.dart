@@ -1,0 +1,1 @@
+enum SummaryMode { daily, monthly }
