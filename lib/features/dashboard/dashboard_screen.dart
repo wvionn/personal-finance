@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../core/constants/app_constants.dart';
 import '../../core/providers/core_providers.dart';
 import '../../core/services/csv_export_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/notifications/idle_transaction_nudge.dart';
-import '../../core/widgets/quick_pill_button.dart';
 import '../../core/widgets/section_card.dart';
 import '../../domain/entities/daily_spend_insight.dart' show DailySpendInsight, SpendVibe;
+import '../../domain/entities/dashboard_summary.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/income.dart';
 import '../../domain/entities/savings_goal.dart';
@@ -20,6 +19,8 @@ import '../income/income_providers.dart';
 import '../settings/settings_screen.dart';
 import '../expense/expense_providers.dart';
 import 'dashboard_providers.dart';
+import 'widgets/dashboard_flow_card.dart';
+import 'widgets/flow_quips.dart';
 import 'widgets/monthly_report_sheet.dart';
 import 'widgets/savings_goal_editor_sheet.dart';
 import 'widgets/trend_bar_chart.dart';
@@ -40,8 +41,9 @@ class DashboardScreen extends ConsumerWidget {
   Future<void> _quickIncome(
     WidgetRef ref,
     BuildContext context,
-    double amount,
-  ) async {
+    double amount, {
+    String? snackMessage,
+  }) async {
     final l10n = AppLocalizations.of(context)!;
     final repo = ref.read(financeRepositoryProvider);
     await repo.upsertIncome(
@@ -54,35 +56,97 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
     _invalidateFinance(ref);
-    if (context.mounted) _flash(context);
+    if (context.mounted) {
+      _flash(context, snackMessage ?? l10n.recorded);
+    }
   }
 
   Future<void> _quickExpense(
     WidgetRef ref,
     BuildContext context,
     double amount,
-  ) async {
+    String category, {
+    String? snackMessage,
+  }) async {
     final l10n = AppLocalizations.of(context)!;
     final repo = ref.read(financeRepositoryProvider);
     await repo.upsertExpense(
       Expense(
         id: _uuid.v4(),
         amount: amount,
-        category: kQuickMiscCategory,
+        category: category,
         date: DateTime.now(),
         note: l10n.noteQuickDash,
       ),
     );
     _invalidateFinance(ref);
-    if (context.mounted) _flash(context);
+    if (context.mounted) {
+      _flash(context, snackMessage ?? l10n.recorded);
+    }
   }
 
-  void _flash(BuildContext context) {
+  void _flash(BuildContext context, String message) {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(AppLocalizations.of(context)!.recorded),
-        duration: const Duration(milliseconds: 600),
+        content: Text(message),
+        duration: Duration(
+          milliseconds: message.length > 24 ? 2400 : 900,
+        ),
+      ),
+    );
+  }
+
+  static const _defaultSavingsGoal = SavingsGoal(
+    id: 'default',
+    title: 'Target tabungan',
+    targetAmount: 5000000,
+  );
+
+  Widget _dashboardFlowCard(
+    BuildContext context,
+    WidgetRef ref,
+    DashboardSummary s,
+    SavingsGoal? goal,
+    AppLocalizations l10n,
+    String lang,
+  ) {
+    final g = goal ?? _defaultSavingsGoal;
+    final progress = g.targetAmount <= 0
+        ? 0.0
+        : (s.balance / g.targetAmount).clamp(0.0, 1.0);
+    return DashboardFlowCard(
+      balanceLabel: l10n.balance,
+      balanceFormatted: formatMoney(s.balance, languageCode: lang),
+      balanceSubtitle: l10n.balanceSubtitle,
+      balanceColor: s.balance >= 0
+          ? AppTheme.positiveMoney
+          : AppTheme.spendStress,
+      goalTitle: '${l10n.savingsGoal} · ${g.title}',
+      goalProgressLabel: '${(progress * 100).round()}%',
+      progress: progress,
+      onTapGoal: () => showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (ctx) => SavingsGoalEditorSheet(initial: g),
+      ),
+      incomeQuickLabel: l10n.quickAddIncome10,
+      onIncome10k: () => _quickIncome(
+        ref,
+        context,
+        10000,
+        snackMessage: FlowQuips.afterIncome(lang),
+      ),
+      expenseMakanLabel: '${l10n.quickAddExpense10} (Makan)',
+      quickAmountSubtitle: formatMoney(10000, languageCode: lang),
+      onExpenseMakan10k: () => _quickExpense(
+        ref,
+        context,
+        10000,
+        'Makan',
+        snackMessage: FlowQuips.afterExpense(lang),
       ),
     );
   }
@@ -102,7 +166,6 @@ class DashboardScreen extends ConsumerWidget {
     final anchor = ref.watch(selectedDashboardAnchorProvider);
     final goalAsync = ref.watch(savingsGoalProvider);
     final insightAsync = ref.watch(dailyInsightProvider);
-    final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -157,72 +220,22 @@ class DashboardScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             summaryAsync.when(
-              data: (s) => Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    l10n.balance,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                          letterSpacing: 1.2,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    formatMoney(s.balance, languageCode: lang),
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -1,
-                          color: s.balance >= 0
-                              ? AppTheme.positiveMoney
-                              : AppTheme.spendStress,
-                        ),
-                  ),
-                  Text(
-                    l10n.balanceSubtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                  ),
-                ],
+              data: (s) => goalAsync.when(
+                data: (goal) => _dashboardFlowCard(
+                  context,
+                  ref,
+                  s,
+                  goal,
+                  l10n,
+                  lang,
+                ),
+                loading: () =>
+                    _dashboardFlowCard(context, ref, s, null, l10n, lang),
+                error: (err, st) =>
+                    _dashboardFlowCard(context, ref, s, null, l10n, lang),
               ),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Text('$e'),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              l10n.quickAdd,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                QuickPillButton(
-                  label: l10n.quickAddIncome10,
-                  subtitle: formatMoney(10000, languageCode: lang),
-                  borderColor: AppTheme.mediumBrown,
-                  labelColor: AppTheme.darkBrown,
-                  onTap: () => _quickIncome(ref, context, 10000),
-                ),
-                QuickPillButton(
-                  label: l10n.quickAddIncome20,
-                  subtitle: formatMoney(20000, languageCode: lang),
-                  borderColor: AppTheme.mediumBrown,
-                  labelColor: AppTheme.darkBrown,
-                  onTap: () => _quickIncome(ref, context, 20000),
-                ),
-                QuickPillButton(
-                  label: l10n.quickAddExpense10,
-                  subtitle: formatMoney(10000, languageCode: lang),
-                  borderColor: AppTheme.spendStress,
-                  labelColor: AppTheme.darkBrown,
-                  onTap: () => _quickExpense(ref, context, 10000),
-                ),
-              ],
             ),
             const SizedBox(height: 20),
             Row(
@@ -350,83 +363,6 @@ class DashboardScreen extends ConsumerWidget {
               ),
               loading: () => const SizedBox.shrink(),
               error: (_, stackTrace) => const SizedBox.shrink(),
-            ),
-            const SizedBox(height: 16),
-            goalAsync.when(
-              data: (goal) {
-                final g = goal ??
-                    const SavingsGoal(
-                      id: 'default',
-                      title: 'Target tabungan',
-                      targetAmount: 5000000,
-                    );
-                final balance = summaryAsync.value?.balance ?? 0;
-                final progress = g.targetAmount <= 0
-                    ? 0.0
-                    : (balance / g.targetAmount).clamp(0.0, 1.0);
-                return SectionCard(
-                  onTap: () => showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    useSafeArea: true,
-                    showDragHandle: true,
-                    builder: (ctx) => SavingsGoalEditorSheet(initial: g),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            l10n.savingsGoal,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const Spacer(),
-                          Icon(
-                            Icons.edit_outlined,
-                            size: 18,
-                            color: scheme.onSurfaceVariant,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        g.title,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                      Text(
-                        '${formatMoney(balance, languageCode: lang)} / ${formatMoney(g.targetAmount, languageCode: lang)}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                            ),
-                      ),
-                      const SizedBox(height: 12),
-                      TweenAnimationBuilder<double>(
-                        key: ValueKey<double>(progress),
-                        tween: Tween(begin: 0, end: progress),
-                        duration: const Duration(milliseconds: 850),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, _) {
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: LinearProgressIndicator(
-                              value: value,
-                              minHeight: 12,
-                              backgroundColor: scheme.surfaceContainerHighest
-                                  .withValues(alpha: 0.5),
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                AppTheme.mediumBrown,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              },
-              loading: () => const SizedBox.shrink(),
-              error: (err, st) => const SizedBox.shrink(),
             ),
           ],
         ),
