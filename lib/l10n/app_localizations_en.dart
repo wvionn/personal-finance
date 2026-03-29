@@ -192,9 +192,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get expenseTitle => 'Spending';
 
   @override
-  String get manualEntry => 'Manual entry';
-
-  @override
   String get aiParseError => 'Could not parse. Try: food 25k';
 
   @override

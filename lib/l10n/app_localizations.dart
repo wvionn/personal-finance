@@ -464,12 +464,6 @@ abstract class AppLocalizations {
   /// **'Spending'**
   String get expenseTitle;
 
-  /// No description provided for @manualEntry.
-  ///
-  /// In en, this message translates to:
-  /// **'Manual entry'**
-  String get manualEntry;
-
   /// No description provided for @aiParseError.
   ///
   /// In en, this message translates to:

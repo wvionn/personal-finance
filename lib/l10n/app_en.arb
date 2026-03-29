@@ -61,7 +61,6 @@
   "recorded": "Recorded",
   "todaySpend": "Today",
   "expenseTitle": "Spending",
-  "manualEntry": "Manual entry",
   "aiParseError": "Could not parse. Try: food 25k",
   "noExpensesYet": "No expenses yet",
   "noSearchMatches": "No matches",

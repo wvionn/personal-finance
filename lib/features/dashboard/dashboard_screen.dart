@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../core/providers/core_providers.dart';
 import '../../core/services/csv_export_service.dart';
 import '../../core/theme/app_theme.dart';
@@ -14,9 +15,11 @@ import '../../domain/entities/daily_spend_insight.dart'
 import '../../domain/entities/dashboard_summary.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/income.dart';
+import '../../domain/entities/quick_action.dart';
 import '../../domain/entities/savings_goal.dart';
 import '../../domain/entities/summary_mode.dart';
 import '../../l10n/app_localizations.dart';
+import '../income/income_quick_actions_customize_screen.dart';
 import '../income/income_providers.dart';
 import '../settings/settings_screen.dart';
 import '../expense/expense_providers.dart';
@@ -73,6 +76,30 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _quickExpense(
+    WidgetRef ref,
+    BuildContext context,
+    double amount,
+    String lang, {
+    String? snackMessage,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final repo = ref.read(financeRepositoryProvider);
+    await repo.upsertExpense(
+      Expense(
+        id: _uuid.v4(),
+        amount: amount,
+        category: kQuickMiscCategory,
+        date: DateTime.now(),
+        note: lang == 'id' ? 'Tarik tabungan' : 'Savings withdrawal',
+      ),
+    );
+    _invalidateFinance(ref);
+    if (context.mounted) {
+      _flash(context, snackMessage ?? l10n.recorded);
+    }
+  }
+
   static const _defaultSavingsGoal = SavingsGoal(
     id: 'default',
     title: 'Target tabungan',
@@ -86,11 +113,30 @@ class DashboardScreen extends ConsumerWidget {
     SavingsGoal? goal,
     AppLocalizations l10n,
     String lang,
+    List<QuickAction> quickIncomes,
   ) {
     final g = goal ?? _defaultSavingsGoal;
     final progress = g.targetAmount <= 0
         ? 0.0
         : (s.balance / g.targetAmount).clamp(0.0, 1.0);
+    final incomeActions = quickIncomes.isEmpty
+        ? [
+            QuickAction(
+              id: 'dash-default-10',
+              type: QuickActionType.income,
+              label: l10n.quickAddIncome10,
+              emoji: '💵',
+              amount: 10000,
+            ),
+            QuickAction(
+              id: 'dash-default-20',
+              type: QuickActionType.income,
+              label: l10n.quickAddIncome20,
+              emoji: '🎯',
+              amount: 20000,
+            ),
+          ]
+        : quickIncomes.take(2).toList();
     return DashboardFlowCard(
       balanceLabel: l10n.balance,
       balanceFormatted: formatMoney(s.balance, languageCode: lang),
@@ -101,6 +147,11 @@ class DashboardScreen extends ConsumerWidget {
       goalTitle: '${l10n.savingsGoal} · ${g.title}',
       goalProgressLabel: '${(progress * 100).round()}%',
       progress: progress,
+      savedFormatted: formatMoney(
+        s.balance < 0 ? 0 : s.balance,
+        languageCode: lang,
+      ),
+      targetFormatted: formatMoney(g.targetAmount, languageCode: lang),
       onTapGoal: () => showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
@@ -108,27 +159,44 @@ class DashboardScreen extends ConsumerWidget {
         showDragHandle: true,
         builder: (ctx) => SavingsGoalEditorSheet(initial: g),
       ),
-      monthlySavingsTitle:
-          lang == 'id' ? 'Tabungan bulanan' : 'Monthly savings',
+      monthlySavingsTitle: lang == 'id'
+          ? 'Tabungan bulanan'
+          : 'Monthly savings',
       quickIncomeTitle: lang == 'id' ? 'Pemasukan cepat' : 'Quick income',
-      incomeQuickLabel: l10n.quickAddIncome10,
-      incomeQuickLabel2: l10n.quickAddIncome20,
-      incomeQuickIcon: Icons.add_card_rounded,
-      incomeQuickIcon2: Icons.savings_rounded,
-      incomeQuickSubtitle2: formatMoney(20000, languageCode: lang),
-      onIncome10k: () => _quickIncome(
+      onEditQuickIncome: () => Navigator.of(context)
+          .push(
+            MaterialPageRoute<void>(
+              builder: (context) => const IncomeQuickActionsCustomizeScreen(),
+            ),
+          )
+          .then((_) {
+            ref.invalidate(incomeQuickActionsProvider);
+            ref.invalidate(incomeQuickActionsCustomizeProvider);
+          }),
+      incomeQuickActions: incomeActions,
+      onFireQuickIncome: (qa) async {
+        await _quickIncome(
+          ref,
+          context,
+          qa.amount,
+          snackMessage: FlowQuips.afterIncome(lang),
+        );
+        await ref
+            .read(financeRepositoryProvider)
+            .incrementQuickActionUse(qa.id);
+        ref.invalidate(incomeQuickActionsProvider);
+      },
+      onHardcodedExpense: () => _quickExpense(
         ref,
         context,
         10000,
-        snackMessage: FlowQuips.afterIncome(lang),
+        lang,
+        snackMessage: FlowQuips.afterExpense(
+          lang,
+          category: kQuickMiscCategory,
+        ),
       ),
-      onIncome20k: () => _quickIncome(
-        ref,
-        context,
-        20000,
-        snackMessage: FlowQuips.afterIncome(lang),
-      ),
-      quickAmountSubtitle: formatMoney(10000, languageCode: lang),
+      lang: lang,
     );
   }
 
@@ -149,6 +217,7 @@ class DashboardScreen extends ConsumerWidget {
     final anchor = ref.watch(selectedDashboardAnchorProvider);
     final goalAsync = ref.watch(savingsGoalProvider);
     final insightAsync = ref.watch(dailyInsightProvider);
+    final quickIncomesAsync = ref.watch(incomeQuickActionsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -204,12 +273,51 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             summaryAsync.when(
               data: (s) => goalAsync.when(
-                data: (goal) =>
-                    _dashboardFlowCard(context, ref, s, goal, l10n, lang),
-                loading: () =>
-                    _dashboardFlowCard(context, ref, s, null, l10n, lang),
-                error: (err, st) =>
-                    _dashboardFlowCard(context, ref, s, null, l10n, lang),
+                data: (goal) => quickIncomesAsync.when(
+                  data: (quickIncomes) => _dashboardFlowCard(
+                    context,
+                    ref,
+                    s,
+                    goal,
+                    l10n,
+                    lang,
+                    quickIncomes,
+                  ),
+                  loading: () =>
+                      _dashboardFlowCard(context, ref, s, goal, l10n, lang, []),
+                  error: (error, stackTrace) =>
+                      _dashboardFlowCard(context, ref, s, goal, l10n, lang, []),
+                ),
+                loading: () => quickIncomesAsync.when(
+                  data: (quickIncomes) => _dashboardFlowCard(
+                    context,
+                    ref,
+                    s,
+                    null,
+                    l10n,
+                    lang,
+                    quickIncomes,
+                  ),
+                  loading: () =>
+                      _dashboardFlowCard(context, ref, s, null, l10n, lang, []),
+                  error: (error, stackTrace) =>
+                      _dashboardFlowCard(context, ref, s, null, l10n, lang, []),
+                ),
+                error: (err, st) => quickIncomesAsync.when(
+                  data: (quickIncomes) => _dashboardFlowCard(
+                    context,
+                    ref,
+                    s,
+                    null,
+                    l10n,
+                    lang,
+                    quickIncomes,
+                  ),
+                  loading: () =>
+                      _dashboardFlowCard(context, ref, s, null, l10n, lang, []),
+                  error: (error, stackTrace) =>
+                      _dashboardFlowCard(context, ref, s, null, l10n, lang, []),
+                ),
               ),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Text('$e'),
@@ -274,7 +382,11 @@ class DashboardScreen extends ConsumerWidget {
                       if (picked != null) {
                         ref
                             .read(selectedDashboardAnchorProvider.notifier)
-                            .state = DateTime(picked.year, picked.month, 1);
+                            .state = DateTime(
+                          picked.year,
+                          picked.month,
+                          1,
+                        );
                         ref.invalidate(dashboardSummaryProvider);
                       }
                     },
@@ -297,15 +409,14 @@ class DashboardScreen extends ConsumerWidget {
                       );
                       if (picked != null) {
                         ref
-                            .read(selectedDashboardAnchorProvider.notifier)
-                            .state = picked;
+                                .read(selectedDashboardAnchorProvider.notifier)
+                                .state =
+                            picked;
                         ref.invalidate(dashboardSummaryProvider);
                       }
                     },
                     icon: const Icon(Icons.today, size: 18),
-                    label: Text(
-                      formatShortDate(anchor, languageCode: lang),
-                    ),
+                    label: Text(formatShortDate(anchor, languageCode: lang)),
                   ),
               ],
             ),
@@ -416,6 +527,24 @@ class _DailyVibeCard extends StatelessWidget {
   final DailySpendInsight insight;
   final String lang;
 
+  String _greetingForNow() {
+    final hour = DateTime.now().hour;
+    if (lang == 'id') {
+      if (hour < 11) return 'Selamat pagi,';
+      if (hour < 15) return 'Selamat siang,';
+      if (hour < 19) return 'Selamat sore,';
+      return 'Selamat malam,';
+    }
+    if (hour < 11) return 'Good morning,';
+    if (hour < 15) return 'Good afternoon,';
+    if (hour < 19) return 'Good evening,';
+    return 'Good night,';
+  }
+
+  String _statusLeadIn() {
+    return lang == 'id' ? 'Vibe keuangan hari ini:' : 'Today\'s money vibe:';
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -459,10 +588,7 @@ class _DailyVibeCard extends StatelessWidget {
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(
-          color: glow.withValues(alpha: 0.4),
-          width: 1.0,
-        ),
+        border: Border.all(color: glow.withValues(alpha: 0.4), width: 1.0),
       ),
       child: Row(
         children: [
@@ -471,14 +597,14 @@ class _DailyVibeCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l10n.dailyStatus,
+                  _greetingForNow(),
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  title,
+                  '${_statusLeadIn()} $title',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: glow,

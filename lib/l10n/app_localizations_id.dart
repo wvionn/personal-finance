@@ -111,7 +111,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get statusNoData => 'Catat beberapa pengeluaran dulu untuk status.';
 
   @override
-  String get smartQuickAdd => 'Satu ketukan';
+  String get smartQuickAdd => 'Satu ketuk';
 
   @override
   String get customizeQuick => 'Atur tombol';
@@ -190,9 +190,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get expenseTitle => 'Pengeluaran';
-
-  @override
-  String get manualEntry => 'Input manual';
 
   @override
   String get aiParseError => 'Tidak dikenali. Contoh: makan 25rb';

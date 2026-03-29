@@ -27,6 +27,9 @@ class ExpenseScreen extends ConsumerStatefulWidget {
 class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
   late final TextEditingController _searchCtrl;
   static const _uuid = Uuid();
+  final Set<String> _selectedExpenseIds = <String>{};
+
+  bool get _isSelecting => _selectedExpenseIds.isNotEmpty;
 
   @override
   void initState() {
@@ -41,6 +44,65 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  void _toggleSelection(String id) {
+    setState(() {
+      if (_selectedExpenseIds.contains(id)) {
+        _selectedExpenseIds.remove(id);
+      } else {
+        _selectedExpenseIds.add(id);
+      }
+    });
+  }
+
+  void _clearSelection() {
+    if (_selectedExpenseIds.isEmpty) return;
+    setState(_selectedExpenseIds.clear);
+  }
+
+  Future<void> _deleteSelectedExpenses(BuildContext context) async {
+    if (_selectedExpenseIds.isEmpty) return;
+    final l10n = AppLocalizations.of(context)!;
+    final lang = Localizations.localeOf(context).languageCode;
+    final count = _selectedExpenseIds.length;
+    final content = lang == 'id'
+        ? 'Hapus $count pengeluaran terpilih?'
+        : 'Delete $count selected expenses?';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.delete),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    final repo = ref.read(financeRepositoryProvider);
+    for (final id in _selectedExpenseIds) {
+      await repo.deleteExpense(id);
+    }
+
+    _clearSelection();
+    ref.invalidate(expenseListProvider);
+    ref.invalidate(dashboardSummaryProvider);
+    ref.invalidate(dailyInsightProvider);
+    if (!context.mounted) return;
+    final msg = lang == 'id'
+        ? '$count pengeluaran dihapus'
+        : '$count expenses deleted';
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   Future<void> _fireQuick(QuickAction qa) async {
@@ -78,23 +140,40 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     final listAsync = ref.watch(expenseListProvider);
     final query = ref.watch(expenseSearchProvider);
     final quickAsync = ref.watch(quickActionsProvider);
+    final selectedLabel = lang == 'id'
+        ? '${_selectedExpenseIds.length} dipilih'
+        : '${_selectedExpenseIds.length} selected';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.expenseTitle),
-        actions: [
-          IconButton(
-            tooltip: l10n.aiInput,
-            icon: const Icon(Icons.auto_fix_high_outlined),
-            onPressed: () => showModalBottomSheet<void>(
-              context: context,
-              isScrollControlled: true,
-              useSafeArea: true,
-              showDragHandle: true,
-              builder: (ctx) => const AiExpenseSheet(),
-            ),
-          ),
-        ],
+        leading: _isSelecting
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _clearSelection,
+              )
+            : null,
+        title: Text(_isSelecting ? selectedLabel : l10n.expenseTitle),
+        actions: _isSelecting
+            ? [
+                IconButton(
+                  tooltip: l10n.delete,
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => _deleteSelectedExpenses(context),
+                ),
+              ]
+            : [
+                IconButton(
+                  tooltip: l10n.aiInput,
+                  icon: const Icon(Icons.auto_fix_high_outlined),
+                  onPressed: () => showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    useSafeArea: true,
+                    showDragHandle: true,
+                    builder: (ctx) => const AiExpenseSheet(),
+                  ),
+                ),
+              ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -186,9 +265,11 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                         const SizedBox(height: 8),
                     itemBuilder: (context, i) {
                       final exp = items[i];
+                      final selected = _selectedExpenseIds.contains(exp.id);
                       return SectionCard(
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
+                          selected: selected,
                           title: Text(exp.category),
                           subtitle: Text(
                             '${formatShortDate(exp.date, languageCode: lang)}'
@@ -207,28 +288,47 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                                       fontWeight: FontWeight.w600,
                                     ),
                               ),
-                              PopupMenuButton<String>(
-                                icon: const Icon(Icons.more_vert),
-                                onSelected: (action) async {
-                                  if (action == 'delete') {
-                                    await ref
-                                        .read(financeRepositoryProvider)
-                                        .deleteExpense(exp.id);
-                                    ref.invalidate(expenseListProvider);
-                                    ref.invalidate(dashboardSummaryProvider);
-                                    ref.invalidate(dailyInsightProvider);
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  PopupMenuItem(
-                                    value: 'delete',
-                                    child: Text(l10n.delete),
-                                  ),
-                                ],
-                              ),
+                              if (_isSelecting)
+                                Icon(
+                                  selected
+                                      ? Icons.check_circle
+                                      : Icons.radio_button_unchecked,
+                                  color: selected
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                )
+                              else
+                                PopupMenuButton<String>(
+                                  icon: const Icon(Icons.more_vert),
+                                  onSelected: (action) async {
+                                    if (action == 'delete') {
+                                      await ref
+                                          .read(financeRepositoryProvider)
+                                          .deleteExpense(exp.id);
+                                      ref.invalidate(expenseListProvider);
+                                      ref.invalidate(dashboardSummaryProvider);
+                                      ref.invalidate(dailyInsightProvider);
+                                    }
+                                  },
+                                  itemBuilder: (context) => [
+                                    PopupMenuItem(
+                                      value: 'delete',
+                                      child: Text(l10n.delete),
+                                    ),
+                                  ],
+                                ),
                             ],
                           ),
-                          onTap: () => _openForm(context, exp),
+                          onTap: () {
+                            if (_isSelecting) {
+                              _toggleSelection(exp.id);
+                              return;
+                            }
+                            _openForm(context, exp);
+                          },
+                          onLongPress: () => _toggleSelection(exp.id),
                         ),
                       );
                     },
@@ -242,9 +342,9 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(context, null),
+        onPressed: _isSelecting ? null : () => _openForm(context, null),
         icon: const Icon(Icons.add),
-        label: Text(l10n.manualEntry),
+        label: Text(l10n.add),
       ),
     );
   }

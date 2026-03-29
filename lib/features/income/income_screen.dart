@@ -21,6 +21,9 @@ class IncomeScreen extends ConsumerStatefulWidget {
 
 class _IncomeScreenState extends ConsumerState<IncomeScreen> {
   late final TextEditingController _searchCtrl;
+  final Set<String> _selectedIncomeIds = <String>{};
+
+  bool get _isSelecting => _selectedIncomeIds.isNotEmpty;
 
   @override
   void initState() {
@@ -37,16 +40,92 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
     super.dispose();
   }
 
+  void _toggleSelection(String id) {
+    setState(() {
+      if (_selectedIncomeIds.contains(id)) {
+        _selectedIncomeIds.remove(id);
+      } else {
+        _selectedIncomeIds.add(id);
+      }
+    });
+  }
+
+  void _clearSelection() {
+    if (_selectedIncomeIds.isEmpty) return;
+    setState(_selectedIncomeIds.clear);
+  }
+
+  Future<void> _deleteSelectedIncomes(BuildContext context) async {
+    if (_selectedIncomeIds.isEmpty) return;
+    final l10n = AppLocalizations.of(context)!;
+    final lang = Localizations.localeOf(context).languageCode;
+    final count = _selectedIncomeIds.length;
+    final content = lang == 'id'
+        ? 'Hapus $count pemasukan terpilih?'
+        : 'Delete $count selected incomes?';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.delete),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    final repo = ref.read(financeRepositoryProvider);
+    for (final id in _selectedIncomeIds) {
+      await repo.deleteIncome(id);
+    }
+
+    _clearSelection();
+    ref.invalidate(incomeListProvider);
+    ref.invalidate(dashboardSummaryProvider);
+    ref.invalidate(dailyInsightProvider);
+    if (!context.mounted) return;
+    final msg =
+        lang == 'id' ? '$count pemasukan dihapus' : '$count incomes deleted';
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final lang = Localizations.localeOf(context).languageCode;
     final listAsync = ref.watch(incomeListProvider);
     final query = ref.watch(incomeSearchProvider);
+    final selectedLabel = lang == 'id'
+        ? '${_selectedIncomeIds.length} dipilih'
+        : '${_selectedIncomeIds.length} selected';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.income),
+        leading: _isSelecting
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _clearSelection,
+              )
+            : null,
+        title: Text(_isSelecting ? selectedLabel : l10n.income),
+        actions: _isSelecting
+            ? [
+                IconButton(
+                  tooltip: l10n.delete,
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => _deleteSelectedIncomes(context),
+                ),
+              ]
+            : null,
       ),
       body: Column(
         children: [
@@ -82,9 +161,11 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
                         const SizedBox(height: 8),
                     itemBuilder: (context, i) {
                       final inc = items[i];
+                      final selected = _selectedIncomeIds.contains(inc.id);
                       return SectionCard(
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
+                          selected: selected,
                           title: Text(inc.source),
                           subtitle: Text(
                             '${formatShortDate(inc.date, languageCode: lang)}'
@@ -103,28 +184,47 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
                                       fontWeight: FontWeight.w600,
                                     ),
                               ),
-                              PopupMenuButton<String>(
-                                icon: const Icon(Icons.more_vert),
-                                onSelected: (action) async {
-                                  if (action == 'delete') {
-                                    await ref
-                                        .read(financeRepositoryProvider)
-                                        .deleteIncome(inc.id);
-                                    ref.invalidate(incomeListProvider);
-                                    ref.invalidate(dashboardSummaryProvider);
-                                    ref.invalidate(dailyInsightProvider);
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  PopupMenuItem(
-                                    value: 'delete',
-                                    child: Text(l10n.delete),
-                                  ),
-                                ],
-                              ),
+                              if (_isSelecting)
+                                Icon(
+                                  selected
+                                      ? Icons.check_circle
+                                      : Icons.radio_button_unchecked,
+                                  color: selected
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                )
+                              else
+                                PopupMenuButton<String>(
+                                  icon: const Icon(Icons.more_vert),
+                                  onSelected: (action) async {
+                                    if (action == 'delete') {
+                                      await ref
+                                          .read(financeRepositoryProvider)
+                                          .deleteIncome(inc.id);
+                                      ref.invalidate(incomeListProvider);
+                                      ref.invalidate(dashboardSummaryProvider);
+                                      ref.invalidate(dailyInsightProvider);
+                                    }
+                                  },
+                                  itemBuilder: (context) => [
+                                    PopupMenuItem(
+                                      value: 'delete',
+                                      child: Text(l10n.delete),
+                                    ),
+                                  ],
+                                ),
                             ],
                           ),
-                          onTap: () => _openForm(context, inc),
+                          onTap: () {
+                            if (_isSelecting) {
+                              _toggleSelection(inc.id);
+                              return;
+                            }
+                            _openForm(context, inc);
+                          },
+                          onLongPress: () => _toggleSelection(inc.id),
                         ),
                       );
                     },
@@ -139,7 +239,7 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _openForm(context, null),
+        onPressed: _isSelecting ? null : () => _openForm(context, null),
         child: const Icon(Icons.add),
       ),
     );
