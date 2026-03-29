@@ -15,8 +15,10 @@ import '../../domain/entities/expense.dart';
 import '../../domain/entities/income.dart';
 import '../../domain/entities/savings_goal.dart';
 import '../../domain/entities/summary_mode.dart';
+import '../../domain/entities/quick_action.dart';
 import '../../l10n/app_localizations.dart';
 import '../income/income_providers.dart';
+import '../income/income_quick_actions_customize_screen.dart';
 import '../settings/settings_screen.dart';
 import '../expense/expense_providers.dart';
 import 'dashboard_providers.dart';
@@ -37,6 +39,30 @@ class DashboardScreen extends ConsumerWidget {
     ref.invalidate(dailyInsightProvider);
     ref.invalidate(incomeListProvider);
     ref.invalidate(expenseListProvider);
+  }
+
+  Future<void> _fireQuickIncome(
+    WidgetRef ref,
+    BuildContext context,
+    QuickAction qa, {
+    String? snackMessage,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final repo = ref.read(financeRepositoryProvider);
+    await repo.upsertIncome(
+      Income(
+        id: _uuid.v4(),
+        amount: qa.amount,
+        source: qa.source ?? l10n.incomeSourceQuick,
+        date: DateTime.now(),
+        note: '${qa.emoji} ${qa.label}',
+      ),
+    );
+    await repo.incrementQuickActionUse(qa.id);
+    _invalidateFinance(ref);
+    if (context.mounted) {
+      _flash(context, snackMessage ?? l10n.recorded);
+    }
   }
 
   Future<void> _quickIncome(
@@ -85,6 +111,7 @@ class DashboardScreen extends ConsumerWidget {
     SavingsGoal? goal,
     AppLocalizations l10n,
     String lang,
+    List<QuickAction> incomeActions,
   ) {
     final g = goal ?? _defaultSavingsGoal;
     final progress = g.targetAmount <= 0
@@ -110,24 +137,34 @@ class DashboardScreen extends ConsumerWidget {
       monthlySavingsTitle:
           lang == 'id' ? 'Tabungan bulanan' : 'Monthly savings',
       quickIncomeTitle: lang == 'id' ? 'Pemasukan cepat' : 'Quick income',
-      incomeQuickLabel: l10n.quickAddIncome10,
-      incomeQuickLabel2: l10n.quickAddIncome20,
-      incomeQuickIcon: Icons.add_card_rounded,
-      incomeQuickIcon2: Icons.savings_rounded,
-      incomeQuickSubtitle2: formatMoney(20000, languageCode: lang),
-      onIncome10k: () => _quickIncome(
+      incomeQuickActions: incomeActions,
+      lang: lang,
+      onEditQuickIncome: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (context) => const IncomeQuickActionsCustomizeScreen(),
+        ),
+      ).then((_) {
+        ref.invalidate(incomeQuickActionsCustomizeProvider);
+        ref.invalidate(incomeQuickActionsProvider);
+      }),
+      onFireQuickIncome: (qa) => _fireQuickIncome(
         ref,
         context,
-        10000,
+        qa,
         snackMessage: FlowQuips.afterIncome(lang),
       ),
-      onIncome20k: () => _quickIncome(
-        ref,
-        context,
-        20000,
-        snackMessage: FlowQuips.afterIncome(lang),
-      ),
-      quickAmountSubtitle: formatMoney(10000, languageCode: lang),
+      onHardcodedExpense: () async {
+        final repo = ref.read(financeRepositoryProvider);
+        await repo.upsertExpense(Expense(
+          id: _uuid.v4(),
+          amount: 10000,
+          category: 'Lainnya',
+          date: DateTime.now(),
+          note: l10n.noteQuickDash,
+        ));
+        _invalidateFinance(ref);
+        if (context.mounted) _flash(context, l10n.recorded);
+      },
     );
   }
 
@@ -148,6 +185,8 @@ class DashboardScreen extends ConsumerWidget {
     final anchor = ref.watch(selectedDashboardAnchorProvider);
     final goalAsync = ref.watch(savingsGoalProvider);
     final insightAsync = ref.watch(dailyInsightProvider);
+    final incomeActionsAsync = ref.watch(incomeQuickActionsProvider);
+    final incomeActions = incomeActionsAsync.valueOrNull ?? [];
 
     return Scaffold(
       appBar: AppBar(
@@ -204,11 +243,11 @@ class DashboardScreen extends ConsumerWidget {
             summaryAsync.when(
               data: (s) => goalAsync.when(
                 data: (goal) =>
-                    _dashboardFlowCard(context, ref, s, goal, l10n, lang),
+                    _dashboardFlowCard(context, ref, s, goal, l10n, lang, incomeActions),
                 loading: () =>
-                    _dashboardFlowCard(context, ref, s, null, l10n, lang),
+                    _dashboardFlowCard(context, ref, s, null, l10n, lang, incomeActions),
                 error: (err, st) =>
-                    _dashboardFlowCard(context, ref, s, null, l10n, lang),
+                    _dashboardFlowCard(context, ref, s, null, l10n, lang, incomeActions),
               ),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Text('$e'),

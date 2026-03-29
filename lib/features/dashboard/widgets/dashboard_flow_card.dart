@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/quick_pill_button.dart';
 import '../../../core/widgets/section_card.dart';
+import '../../../domain/entities/quick_action.dart';
 
 /// Home flow block with summary and functional quick actions.
 class DashboardFlowCard extends StatelessWidget {
@@ -18,14 +20,11 @@ class DashboardFlowCard extends StatelessWidget {
     required this.onTapGoal,
     required this.monthlySavingsTitle,
     required this.quickIncomeTitle,
-    required this.incomeQuickLabel,
-    required this.incomeQuickLabel2,
-    required this.incomeQuickIcon,
-    required this.incomeQuickIcon2,
-    required this.incomeQuickSubtitle2,
-    required this.onIncome10k,
-    required this.onIncome20k,
-    required this.quickAmountSubtitle,
+    required this.onEditQuickIncome,
+    required this.incomeQuickActions,
+    required this.onFireQuickIncome,
+    required this.onHardcodedExpense, // To keep the old -10k behavior
+    required this.lang,
   });
 
   final String balanceLabel;
@@ -38,14 +37,11 @@ class DashboardFlowCard extends StatelessWidget {
   final VoidCallback onTapGoal;
   final String monthlySavingsTitle;
   final String quickIncomeTitle;
-  final String incomeQuickLabel;
-  final String incomeQuickLabel2;
-  final IconData incomeQuickIcon;
-  final IconData incomeQuickIcon2;
-  final String incomeQuickSubtitle2;
-  final VoidCallback onIncome10k;
-  final VoidCallback onIncome20k;
-  final String quickAmountSubtitle;
+  final VoidCallback onEditQuickIncome;
+  final List<QuickAction> incomeQuickActions;
+  final Function(QuickAction) onFireQuickIncome;
+  final VoidCallback onHardcodedExpense;
+  final String lang;
 
   @override
   Widget build(BuildContext context) {
@@ -96,51 +92,52 @@ class DashboardFlowCard extends StatelessWidget {
   }
 
   Widget _buildQuickSectionTitle(BuildContext context, String title) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: AppTheme.textMain,
-          ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textMain,
+              ),
+        ),
+        IconButton(
+          onPressed: onEditQuickIncome,
+          constraints: const BoxConstraints(),
+          padding: EdgeInsets.zero,
+          icon: Icon(Icons.edit, size: 16, color: AppTheme.textMain),
+        ),
+      ],
     );
   }
 
   Widget _buildIncomeGrid() {
     return Row(
       children: [
-        Expanded(
-          child: QuickPillButton(
-            icon: incomeQuickIcon,
-            label: incomeQuickLabel,
-            subtitle: quickAmountSubtitle,
-            compact: true,
-            borderColor: AppTheme.borderHighlight,
-            labelColor: AppTheme.textMain,
-            onTap: onIncome10k,
+        for (final qa in incomeQuickActions) ...[
+          Expanded(
+            child: QuickPillButton(
+              icon: null,
+              label: '${qa.emoji} ${qa.label}',
+              subtitle: '+ ${formatMoney(qa.amount, languageCode: lang)}',
+              compact: true,
+              borderColor: AppTheme.borderHighlight,
+              labelColor: AppTheme.textMain,
+              onTap: () => onFireQuickIncome(qa),
+            ),
           ),
-        ),
-        const SizedBox(width: 10),
+          const SizedBox(width: 10),
+        ],
         Expanded(
           child: QuickPillButton(
-            icon: incomeQuickIcon2,
-            label: incomeQuickLabel2,
-            subtitle: incomeQuickSubtitle2,
-            compact: true,
-            borderColor: AppTheme.borderHighlight,
-            labelColor: AppTheme.textMain,
-            onTap: onIncome20k,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: QuickPillButton(
-            icon: incomeQuickIcon,
-            label: "-10 rb",
-            subtitle: quickAmountSubtitle,
+            icon: Icons.add_card_rounded,
+            label: "−10 rb",
+            subtitle: "Cepat",
             compact: true,
             borderColor: AppTheme.borderHighlight,
             labelColor: AppTheme.spendStress,
-            onTap: onIncome10k, // Ideally this maps to an expense func, just mirroring UI
+            onTap: onHardcodedExpense, // Ideally this maps to an expense func, just mirroring UI
           ),
         ),
       ],
