@@ -150,7 +150,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                       subtitle:
                           '− ${formatMoney(qa.amount, languageCode: lang)}',
                       borderColor: AppTheme.quickExpenseAccent,
-                      labelColor: AppTheme.darkBrown,
+                      labelColor: AppTheme.textMain,
                       onTap: () => _fireQuick(qa),
                     ),
                 ],

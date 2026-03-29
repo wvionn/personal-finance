@@ -40,7 +40,8 @@ class BudgetNudgeMessages {
     "Budget who? Anyway, your graph is starving. Feed it.",
   ];
 
-  static String afternoon(int daySeed) => _afternoon[daySeed % _afternoon.length];
+  static String afternoon(int daySeed) =>
+      _afternoon[daySeed % _afternoon.length];
 
   static String afternoonLate(int daySeed) =>
       _afternoonLate[daySeed % _afternoonLate.length];

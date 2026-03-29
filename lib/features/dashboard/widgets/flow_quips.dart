@@ -8,10 +8,28 @@ final class FlowQuips {
 
   static const _expenseId = <String>[
     'Uwaw juga ya hari ini pengeluarannya.',
-    'Dicatat. Semoga makannya enak, dompetnya ikut sabar ya.',
-    'Minus buat Makan. Wajar lah... kan?',
-    'Tercatat. Perut happy, saldo ikut kepo.',
-    'Siap. Komite perut menang ronde ini.',
+    'Dicatat. Dompet agak ngelirik, tapi aman.',
+    'Minus dikit, hidup tetap lanjut.',
+    'Tercatat. Santai, yang penting ke-track.',
+    'Siap. Pengeluaran masuk list.',
+  ];
+
+  static const _expenseFuelId = <String>[
+    'Bensin dicatat. Gas jalan terus.',
+    'Isi bensin ke-log. Mobil/motor aman.',
+    'Bahan bakar masuk catatan. Lanjut jalan.',
+  ];
+
+  static const _expenseTransportId = <String>[
+    'Transport dicatat. Mobilitas aman.',
+    'Biaya jalan hari ini sudah masuk.',
+    'Perjalanan ke-log. Mantap rapi.',
+  ];
+
+  static const _expenseShoppingId = <String>[
+    'Belanja masuk catatan. Tetap chill.',
+    'Keranjang aman, tracking juga aman.',
+    'Belanja tercatat. Keuangan tetap terarah.',
   ];
 
   static const _incomeId = <String>[
@@ -22,9 +40,27 @@ final class FlowQuips {
   ];
 
   static const _expenseEn = <String>[
-    'Logged. Hope the meal was worth the wallet wince.',
-    'There it goes. Stomach committee: 1 — spreadsheet: 0.',
-    'Recorded. Treat yourself energy, I guess.',
+    'Logged. Wallet noticed, but still under control.',
+    'Recorded. Small spend, still chill.',
+    'Saved. At least your tracking is clean.',
+  ];
+
+  static const _expenseFuelEn = <String>[
+    'Fuel logged. Ready to roll.',
+    'Gas spend recorded. Commute secured.',
+    'Fuel cost saved. Keep going.',
+  ];
+
+  static const _expenseTransportEn = <String>[
+    'Transport logged. Smooth move.',
+    'Ride cost recorded. Nice and tidy.',
+    'Travel spend saved.',
+  ];
+
+  static const _expenseShoppingEn = <String>[
+    'Shopping logged. Balance still watched.',
+    'Purchase recorded. Clean tracking.',
+    'Saved. Retail therapy, but structured.',
   ];
 
   static const _incomeEn = <String>[
@@ -33,8 +69,21 @@ final class FlowQuips {
     'In it goes. Rare win for the number at the top.',
   ];
 
-  static String afterExpense(String languageCode) {
-    final list = languageCode == 'id' ? _expenseId : _expenseEn;
+  static String afterExpense(String languageCode, {String? category}) {
+    final isId = languageCode == 'id';
+    final key = (category ?? '').toLowerCase();
+
+    late final List<String> list;
+    if (key.contains('bahan bakar') || key.contains('bensin')) {
+      list = isId ? _expenseFuelId : _expenseFuelEn;
+    } else if (key.contains('transport')) {
+      list = isId ? _expenseTransportId : _expenseTransportEn;
+    } else if (key.contains('belanja')) {
+      list = isId ? _expenseShoppingId : _expenseShoppingEn;
+    } else {
+      list = isId ? _expenseId : _expenseEn;
+    }
+
     return list[_rng.nextInt(list.length)];
   }
 

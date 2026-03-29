@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
-/// Compact one-tap control: flat border, no shadow / glow.
+/// Compact one-tap control with a calm, tactile visual style.
 class QuickPillButton extends StatefulWidget {
   const QuickPillButton({
     super.key,
     required this.label,
     this.subtitle,
+    this.icon,
     required this.onTap,
     this.borderColor,
     this.labelColor,
@@ -14,6 +16,7 @@ class QuickPillButton extends StatefulWidget {
 
   final String label;
   final String? subtitle;
+  final IconData? icon;
   final VoidCallback onTap;
   final Color? borderColor;
   final Color? labelColor;
@@ -35,9 +38,10 @@ class _QuickPillButtonState extends State<QuickPillButton>
       vsync: this,
       duration: const Duration(milliseconds: 80),
     );
-    _scale = Tween<double>(begin: 1, end: 0.98).animate(
-      CurvedAnimation(parent: _c, curve: Curves.easeOut),
-    );
+    _scale = Tween<double>(
+      begin: 1,
+      end: 0.96,
+    ).animate(CurvedAnimation(parent: _c, curve: Curves.easeOut));
   }
 
   @override
@@ -48,10 +52,9 @@ class _QuickPillButtonState extends State<QuickPillButton>
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final border = widget.borderColor ?? scheme.primary;
-    final lbl = widget.labelColor ?? scheme.primary;
-
+    final border = widget.borderColor ?? AppTheme.borderHighlight;
+    final lbl = widget.labelColor ?? AppTheme.textMain;
+    
     return ScaleTransition(
       scale: _scale,
       child: Material(
@@ -61,36 +64,62 @@ class _QuickPillButtonState extends State<QuickPillButton>
           onTapDown: (_) => _c.forward(),
           onTapUp: (_) => _c.reverse(),
           onTapCancel: () => _c.reverse(),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           child: Ink(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              color: scheme.surface.withValues(alpha: 0.65),
-              border: Border.all(color: border.withValues(alpha: 0.65)),
+              borderRadius: BorderRadius.circular(16),
+              color: AppTheme.panel,
+              border: Border.all(color: border, width: 1.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: widget.compact ? 12 : 16,
-                vertical: widget.compact ? 10 : 14,
+                vertical: widget.compact ? 14 : 18,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    widget.label,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: lbl,
-                          letterSpacing: 0.2,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.icon != null) ...[
+                        Icon(widget.icon, size: 16, color: lbl),
+                        const SizedBox(width: 6),
+                      ],
+                      Flexible(
+                        child: Text(
+                          widget.label,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: lbl,
+                                letterSpacing: 0.1,
+                              ),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
+                      ),
+                    ],
                   ),
                   if (widget.subtitle != null) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       widget.subtitle!,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.textMuted,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ],

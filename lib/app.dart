@@ -16,7 +16,7 @@ class CatatUangApp extends ConsumerWidget {
       locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      title: 'Catat Uang',
+      title: 'Piyon finance tracking',
       theme: AppTheme.light(),
       themeMode: ThemeMode.light,
       debugShowCheckedModeBanner: false,

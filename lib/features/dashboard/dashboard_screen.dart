@@ -8,7 +8,8 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/notifications/idle_transaction_nudge.dart';
 import '../../core/widgets/section_card.dart';
-import '../../domain/entities/daily_spend_insight.dart' show DailySpendInsight, SpendVibe;
+import '../../domain/entities/daily_spend_insight.dart'
+    show DailySpendInsight, SpendVibe;
 import '../../domain/entities/dashboard_summary.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/income.dart';
@@ -61,38 +62,12 @@ class DashboardScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _quickExpense(
-    WidgetRef ref,
-    BuildContext context,
-    double amount,
-    String category, {
-    String? snackMessage,
-  }) async {
-    final l10n = AppLocalizations.of(context)!;
-    final repo = ref.read(financeRepositoryProvider);
-    await repo.upsertExpense(
-      Expense(
-        id: _uuid.v4(),
-        amount: amount,
-        category: category,
-        date: DateTime.now(),
-        note: l10n.noteQuickDash,
-      ),
-    );
-    _invalidateFinance(ref);
-    if (context.mounted) {
-      _flash(context, snackMessage ?? l10n.recorded);
-    }
-  }
-
   void _flash(BuildContext context, String message) {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        duration: Duration(
-          milliseconds: message.length > 24 ? 2400 : 900,
-        ),
+        duration: Duration(milliseconds: message.length > 24 ? 2400 : 900),
       ),
     );
   }
@@ -132,22 +107,27 @@ class DashboardScreen extends ConsumerWidget {
         showDragHandle: true,
         builder: (ctx) => SavingsGoalEditorSheet(initial: g),
       ),
+      monthlySavingsTitle:
+          lang == 'id' ? 'Tabungan bulanan' : 'Monthly savings',
+      quickIncomeTitle: lang == 'id' ? 'Pemasukan cepat' : 'Quick income',
       incomeQuickLabel: l10n.quickAddIncome10,
+      incomeQuickLabel2: l10n.quickAddIncome20,
+      incomeQuickIcon: Icons.add_card_rounded,
+      incomeQuickIcon2: Icons.savings_rounded,
+      incomeQuickSubtitle2: formatMoney(20000, languageCode: lang),
       onIncome10k: () => _quickIncome(
         ref,
         context,
         10000,
         snackMessage: FlowQuips.afterIncome(lang),
       ),
-      expenseMakanLabel: '${l10n.quickAddExpense10} (Makan)',
-      quickAmountSubtitle: formatMoney(10000, languageCode: lang),
-      onExpenseMakan10k: () => _quickExpense(
+      onIncome20k: () => _quickIncome(
         ref,
         context,
-        10000,
-        'Makan',
-        snackMessage: FlowQuips.afterExpense(lang),
+        20000,
+        snackMessage: FlowQuips.afterIncome(lang),
       ),
+      quickAmountSubtitle: formatMoney(10000, languageCode: lang),
     );
   }
 
@@ -155,7 +135,9 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen(dashboardSummaryProvider, (previous, next) {
       next.whenData((_) {
-        Future.microtask(() => IdleTransactionNudge.maybeAfterDashboardLoad(ref));
+        Future.microtask(
+          () => IdleTransactionNudge.maybeAfterDashboardLoad(ref),
+        );
       });
     });
 
@@ -211,7 +193,7 @@ class DashboardScreen extends ConsumerWidget {
           ref.invalidate(dailyInsightProvider);
         },
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
           children: [
             insightAsync.when(
               data: (ins) => _DailyVibeCard(insight: ins, lang: lang),
@@ -221,14 +203,8 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             summaryAsync.when(
               data: (s) => goalAsync.when(
-                data: (goal) => _dashboardFlowCard(
-                  context,
-                  ref,
-                  s,
-                  goal,
-                  l10n,
-                  lang,
-                ),
+                data: (goal) =>
+                    _dashboardFlowCard(context, ref, s, goal, l10n, lang),
                 loading: () =>
                     _dashboardFlowCard(context, ref, s, null, l10n, lang),
                 error: (err, st) =>
@@ -239,29 +215,50 @@ class DashboardScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                ChoiceChip(
-                  label: Text(l10n.monthly),
-                  selected: mode == SummaryMode.monthly,
-                  selectedColor: AppTheme.beige,
-                  onSelected: (_) {
-                    ref.read(summaryModeProvider.notifier).state =
-                        SummaryMode.monthly;
+                SegmentedButton<SummaryMode>(
+                  showSelectedIcon: true,
+                  segments: [
+                    ButtonSegment(
+                      value: SummaryMode.monthly,
+                      label: Text(l10n.monthly),
+                    ),
+                    ButtonSegment(
+                      value: SummaryMode.daily,
+                      label: Text(l10n.daily),
+                    ),
+                  ],
+                  selected: {mode},
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return AppTheme.elevated;
+                      }
+                      return Colors.transparent;
+                    }),
+                    foregroundColor: WidgetStateProperty.resolveWith((states) {
+                      return AppTheme.textMain;
+                    }),
+                    side: WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return const BorderSide(color: AppTheme.elevated);
+                      }
+                      return const BorderSide(color: AppTheme.textMain);
+                    }),
+                    shape: WidgetStatePropertyAll(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                  onSelectionChanged: (selected) {
+                    final next = selected.first;
+                    if (next == mode) return;
+                    ref.read(summaryModeProvider.notifier).state = next;
                     ref.invalidate(dashboardSummaryProvider);
                   },
                 ),
-                const SizedBox(width: 8),
-                ChoiceChip(
-                  label: Text(l10n.daily),
-                  selected: mode == SummaryMode.daily,
-                  selectedColor: AppTheme.beige,
-                  onSelected: (_) {
-                    ref.read(summaryModeProvider.notifier).state =
-                        SummaryMode.daily;
-                    ref.invalidate(dashboardSummaryProvider);
-                  },
-                ),
-                const Spacer(),
                 if (mode == SummaryMode.monthly)
                   TextButton.icon(
                     onPressed: () async {
@@ -279,10 +276,12 @@ class DashboardScreen extends ConsumerWidget {
                       }
                     },
                     icon: const Icon(Icons.calendar_month, size: 18),
-                    label: Text(formatMonthYear(
-                      DateTime(anchor.year, anchor.month),
-                      languageCode: lang,
-                    )),
+                    label: Text(
+                      formatMonthYear(
+                        DateTime(anchor.year, anchor.month),
+                        languageCode: lang,
+                      ),
+                    ),
                   )
                 else
                   TextButton.icon(
@@ -301,7 +300,9 @@ class DashboardScreen extends ConsumerWidget {
                       }
                     },
                     icon: const Icon(Icons.today, size: 18),
-                    label: Text(formatShortDate(anchor, languageCode: lang)),
+                    label: Text(
+                      formatShortDate(anchor, languageCode: lang),
+                    ),
                   ),
               ],
             ),
@@ -319,7 +320,7 @@ class DashboardScreen extends ConsumerWidget {
                             l10n.periodIncome,
                             formatMoney(s.periodIncome, languageCode: lang),
                             Icons.trending_up,
-                            AppTheme.mediumBrown,
+                            AppTheme.chartIncome,
                           ),
                         ),
                       ),
@@ -331,7 +332,7 @@ class DashboardScreen extends ConsumerWidget {
                             l10n.periodExpense,
                             formatMoney(s.periodExpense, languageCode: lang),
                             Icons.trending_down,
-                            AppTheme.darkBrown,
+                            AppTheme.chartExpense,
                           ),
                         ),
                       ),
@@ -341,8 +342,8 @@ class DashboardScreen extends ConsumerWidget {
                   Text(
                     l10n.trend,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   SectionCard(
@@ -395,9 +396,11 @@ class DashboardScreen extends ConsumerWidget {
         const SizedBox(height: 8),
         Text(
           value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: tint,
+            letterSpacing: -0.5,
+          ),
         ),
       ],
     );
@@ -422,17 +425,17 @@ class _DailyVibeCard extends StatelessWidget {
     if (!insight.hasEnoughData) {
       title = l10n.dailyStatus;
       hint = l10n.statusNoData;
-      glow = AppTheme.mediumBrown;
+      glow = AppTheme.neonAmber;
     } else {
       switch (insight.vibe) {
         case SpendVibe.hemat:
           title = l10n.statusHemat;
           hint = l10n.statusHematHint;
-          glow = AppTheme.darkBrown;
+          glow = AppTheme.neonAmber;
         case SpendVibe.normal:
           title = l10n.statusNormal;
           hint = l10n.statusNormalHint;
-          glow = AppTheme.mediumBrown;
+          glow = AppTheme.textMain;
         case SpendVibe.boros:
           title = l10n.statusBoros;
           hint = l10n.statusBorosHint;
@@ -441,11 +444,28 @@ class _DailyVibeCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: AppTheme.cream,
-        border: Border.all(color: glow.withValues(alpha: 0.55), width: 2),
+        borderRadius: BorderRadius.circular(24),
+        color: AppTheme.panel,
+        boxShadow: [
+          BoxShadow(
+            color: glow.withValues(alpha: 0.2),
+            blurRadius: 20,
+            spreadRadius: 2,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: glow.withValues(alpha: 0.35),
+            blurRadius: 40,
+            spreadRadius: -4,
+            offset: const Offset(0, 0),
+          ),
+        ],
+        border: Border.all(
+          color: glow.withValues(alpha: 0.6),
+          width: 1.5,
+        ),
       ),
       child: Row(
         children: [
@@ -456,24 +476,30 @@ class _DailyVibeCard extends StatelessWidget {
                 Text(
                   l10n.dailyStatus,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   title,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: glow,
+                    fontWeight: FontWeight.w800,
+                    color: glow,
+                    shadows: [
+                      Shadow(
+                        color: glow.withValues(alpha: 0.6),
+                        blurRadius: 12,
                       ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   hint,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                        height: 1.35,
-                      ),
+                    color: scheme.onSurfaceVariant,
+                    height: 1.35,
+                  ),
                 ),
               ],
             ),
@@ -489,8 +515,8 @@ class _DailyVibeCard extends StatelessWidget {
                 Text(
                   formatMoney(insight.todayExpense, languageCode: lang),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
