@@ -63,14 +63,36 @@ final class FlowQuips {
     'Saved. Retail therapy, but structured.',
   ];
 
+  static const _expenseOverspendId = <String>[
+    'Eh eh, ini pemasukan minus pengeluaran jebol, kamu boros lagi apa gimana ini?',
+    'Saldo menjerit. Ngirit woi!',
+    'Makin minus aja nih. Ingat, jajan pakai uang, bukan pakai doa.',
+    'Dicatat, tapi awas dompet udah nangis darah.',
+    'Overbudget alert. Gaya elit, saldo sulit.',
+  ];
+
+  static const _expenseOverspendEn = <String>[
+    'Wait, expenses exceeded income? Your wallet is crying.',
+    'Balance dropped below zero. Time to eat ice cubes.',
+    'Logged. But seriously, stop spending.',
+    'Overspending detected. Be better tomorrow.',
+    'Minus balance? Bold strategy, let\'s see if it pays off.',
+  ];
+
   static const _incomeEn = <String>[
     'Nice — something actually landed.',
     'Logged. The balance will take it.',
     'In it goes. Rare win for the number at the top.',
   ];
 
-  static String afterExpense(String languageCode, {String? category}) {
+  static String afterExpense(String languageCode, {String? category, bool isOverspending = false}) {
     final isId = languageCode == 'id';
+    
+    if (isOverspending) {
+      final list = isId ? _expenseOverspendId : _expenseOverspendEn;
+      return list[_rng.nextInt(list.length)];
+    }
+
     final key = (category ?? '').toLowerCase();
 
     late final List<String> list;

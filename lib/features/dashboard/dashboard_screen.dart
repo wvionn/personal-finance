@@ -162,8 +162,21 @@ class DashboardScreen extends ConsumerWidget {
           date: DateTime.now(),
           note: l10n.noteQuickDash,
         ));
+        
+        final summary = ref.read(dashboardSummaryProvider).valueOrNull;
+        final isOverspending = summary != null && (summary.balance - 10000) < 0;
+
         _invalidateFinance(ref);
-        if (context.mounted) _flash(context, l10n.recorded);
+        if (context.mounted) {
+          _flash(
+            context,
+            FlowQuips.afterExpense(
+              lang,
+              category: 'Lainnya',
+              isOverspending: isOverspending,
+            ),
+          );
+        }
       },
     );
   }
