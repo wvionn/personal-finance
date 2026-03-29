@@ -150,4 +150,15 @@ class NotificationService {
       _details(),
     );
   }
+
+  /// Immediately fires a test notification with a custom [id], [title], and [body].
+  /// Used by the Settings screen so the user can preview each notification type.
+  static Future<void> showTestNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    await ensureInitialized();
+    await _plugin.show(id, title, body, _details());
+  }
 }
