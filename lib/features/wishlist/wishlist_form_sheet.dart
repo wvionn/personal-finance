@@ -19,6 +19,8 @@ class WishlistFormSheet extends ConsumerStatefulWidget {
 class _WishlistFormSheetState extends ConsumerState<WishlistFormSheet> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _priceCtrl;
+  late final TextEditingController _savedCtrl;
+  late final TextEditingController _urlCtrl;
   late WishlistPriority _priority;
   final _formKey = GlobalKey<FormState>();
   static const _uuid = Uuid();
@@ -28,8 +30,13 @@ class _WishlistFormSheetState extends ConsumerState<WishlistFormSheet> {
     super.initState();
     final e = widget.existing;
     _nameCtrl = TextEditingController(text: e?.name ?? '');
-    _priceCtrl =
-        TextEditingController(text: e?.estimatedPrice.toString() ?? '');
+    _priceCtrl = TextEditingController(
+      text: e?.estimatedPrice.toString() ?? '',
+    );
+    _savedCtrl = TextEditingController(
+      text: e != null && e.savedAmount > 0 ? e.savedAmount.toString() : '',
+    );
+    _urlCtrl = TextEditingController(text: e?.itemUrl ?? '');
     _priority = e?.priority ?? WishlistPriority.medium;
   }
 
@@ -37,6 +44,8 @@ class _WishlistFormSheetState extends ConsumerState<WishlistFormSheet> {
   void dispose() {
     _nameCtrl.dispose();
     _priceCtrl.dispose();
+    _savedCtrl.dispose();
+    _urlCtrl.dispose();
     super.dispose();
   }
 
@@ -71,15 +80,41 @@ class _WishlistFormSheetState extends ConsumerState<WishlistFormSheet> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _priceCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Estimated price'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Estimated price'),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 validator: (v) {
                   final n = double.tryParse(v ?? '');
                   if (n == null || n <= 0) return 'Enter a positive amount';
                   return null;
                 },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _savedCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Already saved (optional)',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                validator: (v) {
+                  if (v != null && v.trim().isNotEmpty) {
+                    final n = double.tryParse(v);
+                    if (n == null || n < 0) return 'Enter a valid amount';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _urlCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'E-commerce Link (optional)',
+                  hintText: 'https://shopee.co.id/...',
+                ),
+                keyboardType: TextInputType.url,
               ),
               const SizedBox(height: 12),
               Text('Priority', style: Theme.of(context).textTheme.labelLarge),
@@ -100,19 +135,27 @@ class _WishlistFormSheetState extends ConsumerState<WishlistFormSheet> {
                   ),
                 ],
                 selected: {_priority},
-                onSelectionChanged: (s) =>
-                    setState(() => _priority = s.first),
+                onSelectionChanged: (s) => setState(() => _priority = s.first),
               ),
               const SizedBox(height: 20),
               FilledButton(
                 onPressed: () async {
                   if (!_formKey.currentState!.validate()) return;
                   final repo = ref.read(financeRepositoryProvider);
+                  final savedAmt =
+                      double.tryParse(_savedCtrl.text.trim()) ?? 0.0;
+                  final itemUrl = _urlCtrl.text.trim().isEmpty
+                      ? null
+                      : _urlCtrl.text.trim();
+
                   final item = WishlistItem(
                     id: widget.existing?.id ?? _uuid.v4(),
                     name: _nameCtrl.text.trim(),
                     estimatedPrice: double.parse(_priceCtrl.text.trim()),
                     priority: _priority,
+                    targetAmount: double.parse(_priceCtrl.text.trim()),
+                    savedAmount: savedAmt,
+                    itemUrl: itemUrl,
                     purchased: widget.existing?.purchased ?? false,
                     purchasedAt: widget.existing?.purchasedAt,
                   );

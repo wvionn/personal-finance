@@ -257,7 +257,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyStatus.
   ///
   /// In en, this message translates to:
-  /// **'Today\'s vibe'**
+  /// **'No data'**
   String get dailyStatus;
 
   /// No description provided for @statusHemat.

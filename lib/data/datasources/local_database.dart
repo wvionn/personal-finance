@@ -4,7 +4,7 @@ import 'package:sqflite/sqflite.dart';
 
 class LocalDatabase {
   static const _name = 'catat_uang.db';
-  static const _version = 3;
+  static const _version = 4;
 
   static Future<Database> open() async {
     final dir = await getApplicationDocumentsDirectory();
@@ -36,7 +36,18 @@ class LocalDatabase {
       await _seedQuickActions(db);
     }
     if (oldVersion < 3) {
-      await db.execute('ALTER TABLE savings_goal ADD COLUMN saved_amount REAL NOT NULL DEFAULT 0.0');
+      await db.execute(
+        'ALTER TABLE savings_goal ADD COLUMN saved_amount REAL NOT NULL DEFAULT 0.0',
+      );
+    }
+    if (oldVersion < 4) {
+      await db.execute(
+        'ALTER TABLE wishlist ADD COLUMN target_amount REAL NOT NULL DEFAULT 0.0',
+      );
+      await db.execute(
+        'ALTER TABLE wishlist ADD COLUMN saved_amount REAL NOT NULL DEFAULT 0.0',
+      );
+      await db.execute('ALTER TABLE wishlist ADD COLUMN item_url TEXT');
     }
   }
 
@@ -66,7 +77,10 @@ class LocalDatabase {
         estimated_price REAL NOT NULL,
         priority TEXT NOT NULL,
         purchased INTEGER NOT NULL DEFAULT 0,
-        purchased_at TEXT
+        purchased_at TEXT,
+        target_amount REAL NOT NULL DEFAULT 0.0,
+        saved_amount REAL NOT NULL DEFAULT 0.0,
+        item_url TEXT
       );
     ''');
     await db.execute('''
@@ -111,11 +125,10 @@ class LocalDatabase {
   }
 
   static Future<void> _seedPrefs(Database db) async {
-    await db.insert(
-      'app_prefs',
-      {'key': 'locale', 'value': 'id'},
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
+    await db.insert('app_prefs', {
+      'key': 'locale',
+      'value': 'id',
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 
   static Future<void> _seedQuickActions(Database db) async {
@@ -131,21 +144,17 @@ class LocalDatabase {
     ];
     for (var i = 0; i < presets.length; i++) {
       final r = presets[i];
-      await db.insert(
-        'quick_actions',
-        {
-          'id': r[0],
-          'action_type': r[1],
-          'label': r[2],
-          'emoji': r[3],
-          'amount': r[4],
-          'category': r[5],
-          'source': r[6],
-          'use_count': 0,
-          'sort_order': i,
-        },
-        conflictAlgorithm: ConflictAlgorithm.ignore,
-      );
+      await db.insert('quick_actions', {
+        'id': r[0],
+        'action_type': r[1],
+        'label': r[2],
+        'emoji': r[3],
+        'amount': r[4],
+        'category': r[5],
+        'source': r[6],
+        'use_count': 0,
+        'sort_order': i,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
   }
 }

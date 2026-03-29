@@ -87,7 +87,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickAddExpense10 => '−10 rb';
 
   @override
-  String get dailyStatus => 'Today\'s vibe';
+  String get dailyStatus => 'No data';
 
   @override
   String get statusHemat => 'Hemat';

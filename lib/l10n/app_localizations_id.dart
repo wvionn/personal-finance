@@ -87,7 +87,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get quickAddExpense10 => '−10 rb';
 
   @override
-  String get dailyStatus => 'Status hari ini';
+  String get dailyStatus => 'Belum ada data';
 
   @override
   String get statusHemat => 'Hemat';

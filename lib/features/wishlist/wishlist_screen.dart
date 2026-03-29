@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/providers/core_providers.dart';
 import '../../core/utils/formatters.dart';
@@ -25,11 +26,11 @@ class WishlistScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final lang = Localizations.localeOf(context).languageCode;
     final listAsync = ref.watch(wishlistProvider);
+    final avgSavingsAsync = ref.watch(averageMonthlySavingsProvider);
+    final avgSavings = avgSavingsAsync.valueOrNull ?? 0.0;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.wishlist),
-      ),
+      appBar: AppBar(title: Text(l10n.wishlist)),
       body: listAsync.when(
         data: (items) {
           if (items.isEmpty) {
@@ -44,35 +45,47 @@ class WishlistScreen extends ConsumerWidget {
           final done = items.where((w) => w.purchased).toList();
 
           return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(wishlistProvider),
+            onRefresh: () async {
+              ref.invalidate(wishlistProvider);
+              ref.invalidate(averageMonthlySavingsProvider);
+            },
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
                 if (open.isNotEmpty) ...[
-                  Text(l10n.wishlistPlanned,
-                      style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    l10n.wishlistPlanned,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 8),
-                  ...open.map((w) => _WishTile(
-                        lang: lang,
-                        item: w,
-                        onEdit: () => _openForm(context, ref, w),
-                        onPurchased: () =>
-                            _markPurchasedFlow(context, ref, w),
-                        onDelete: () => _delete(context, ref, w),
-                      )),
+                  ...open.map(
+                    (w) => _WishTile(
+                      lang: lang,
+                      item: w,
+                      avgSavings: avgSavings,
+                      onEdit: () => _openForm(context, ref, w),
+                      onPurchased: () => _markPurchasedFlow(context, ref, w),
+                      onDelete: () => _delete(context, ref, w),
+                    ),
+                  ),
                 ],
                 if (done.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  Text(l10n.wishlistPurchased,
-                      style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    l10n.wishlistPurchased,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 8),
-                  ...done.map((w) => _WishTile(
-                        lang: lang,
-                        item: w,
-                        onEdit: () => _openForm(context, ref, w),
-                        onPurchased: null,
-                        onDelete: () => _delete(context, ref, w),
-                      )),
+                  ...done.map(
+                    (w) => _WishTile(
+                      lang: lang,
+                      item: w,
+                      avgSavings: 0,
+                      onEdit: () => _openForm(context, ref, w),
+                      onPurchased: null,
+                      onDelete: () => _delete(context, ref, w),
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -151,21 +164,24 @@ class WishlistScreen extends ConsumerWidget {
     WidgetRef ref,
     WishlistItem w,
   ) async {
+    final lang = Localizations.localeOf(context).languageCode;
     final addExpense = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Mark as purchased'),
-        content: const Text(
-          'Also log this as an expense? You can set amount and category next.',
+        title: Text(lang == 'id' ? 'Tandai sudah dibeli' : 'Mark as purchased'),
+        content: Text(
+          lang == 'id'
+              ? 'Apakah kamu ingin mencatat ini ke pengeluaran bulan ini?'
+              : 'Also log this as an expense? You can set amount and category next.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('No, just mark'),
+            child: Text(lang == 'id' ? 'Tidak, tandai saja' : 'No, just mark'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Add expense'),
+            child: Text(lang == 'id' ? 'Catat Pengeluaran' : 'Add expense'),
           ),
         ],
       ),
@@ -178,8 +194,9 @@ class WishlistScreen extends ConsumerWidget {
     final note = 'Wishlist: ${w.name}';
 
     if (addExpense) {
-      final amountCtrl =
-          TextEditingController(text: w.estimatedPrice.toString());
+      final amountCtrl = TextEditingController(
+        text: w.estimatedPrice.toString(),
+      );
       var cat = category;
       final formKey = GlobalKey<FormState>();
       try {
@@ -197,8 +214,9 @@ class WishlistScreen extends ConsumerWidget {
                       children: [
                         TextFormField(
                           controller: amountCtrl,
-                          decoration:
-                              const InputDecoration(labelText: 'Amount'),
+                          decoration: const InputDecoration(
+                            labelText: 'Amount',
+                          ),
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
@@ -216,15 +234,14 @@ class WishlistScreen extends ConsumerWidget {
                           value: cat,
                           items: kExpenseCategories
                               .map(
-                                (c) => DropdownMenuItem(
-                                  value: c,
-                                  child: Text(c),
-                                ),
+                                (c) =>
+                                    DropdownMenuItem(value: c, child: Text(c)),
                               )
                               .toList(),
                           onChanged: (v) => setSt(() => cat = v ?? cat),
-                          decoration:
-                              const InputDecoration(labelText: 'Category'),
+                          decoration: const InputDecoration(
+                            labelText: 'Category',
+                          ),
                         ),
                       ],
                     ),
@@ -258,10 +275,7 @@ class WishlistScreen extends ConsumerWidget {
 
     final repo = ref.read(financeRepositoryProvider);
     await repo.upsertWishlistItem(
-      w.copyWith(
-        purchased: true,
-        purchasedAt: DateTime.now(),
-      ),
+      w.copyWith(purchased: true, purchasedAt: DateTime.now()),
     );
     if (addExpense) {
       await repo.upsertExpense(
@@ -284,6 +298,7 @@ class _WishTile extends StatelessWidget {
   const _WishTile({
     required this.lang,
     required this.item,
+    required this.avgSavings,
     required this.onEdit,
     required this.onDelete,
     this.onPurchased,
@@ -291,6 +306,7 @@ class _WishTile extends StatelessWidget {
 
   final String lang;
   final WishlistItem item;
+  final double avgSavings;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback? onPurchased;
@@ -304,6 +320,37 @@ class _WishTile extends StatelessWidget {
       WishlistPriority.medium => scheme.secondaryContainer,
       WishlistPriority.low => scheme.surfaceContainerHighest,
     };
+
+    final progress = item.targetAmount > 0
+        ? (item.savedAmount / item.targetAmount).clamp(0.0, 1.0)
+        : 0.0;
+
+    String getEstimation() {
+      if (item.targetAmount <= 0) return '';
+      final remaining = item.targetAmount - item.savedAmount;
+      if (remaining <= 0)
+        return lang == 'id'
+            ? 'Dana sudah terkumpul! \u{1F389}'
+            : 'Funds are ready! \u{1F389}';
+
+      final monthly = avgSavings > 0
+          ? avgSavings
+          : 500000.0; // fallback asumsi 500rb
+      final monthsNeeded = (remaining / monthly).ceil();
+      if (monthsNeeded > 120)
+        return lang == 'id'
+            ? '>10 tahun lagi \u{1F622}'
+            : '>10 years away \u{1F622}';
+
+      final estimatedDate = DateTime.now().add(
+        Duration(days: 30 * monthsNeeded),
+      );
+      final monthStr = _getMonthName(estimatedDate.month);
+      return lang == 'id'
+          ? 'Kebeli di $monthStr ${estimatedDate.year} (jika tertabung ${formatMoney(monthly, languageCode: lang)}/bln)'
+          : 'Achievable by $monthStr ${estimatedDate.year}';
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: SectionCard(
@@ -319,22 +366,84 @@ class _WishTile extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-                Chip(label: Text(item.priority.name), backgroundColor: chipColor),
+                Chip(
+                  label: Text(
+                    item.priority.name.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  backgroundColor: chipColor,
+                  padding: EdgeInsets.zero,
+                ),
               ],
             ),
             const SizedBox(height: 4),
             Text(
               formatMoney(item.estimatedPrice, languageCode: lang),
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
             ),
+
+            if (!item.purchased) ...[
+              const SizedBox(height: 12),
+              LinearProgressIndicator(
+                value: progress,
+                backgroundColor: scheme.surfaceContainerHighest,
+                color: scheme.primary,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${formatMoney(item.savedAmount, languageCode: lang)} terkumpul',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  Text(
+                    '${(progress * 100).toStringAsFixed(0)}%',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: scheme.secondaryContainer.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_month_outlined,
+                      size: 16,
+                      color: scheme.onSecondaryContainer,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        getEstimation(),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: scheme.onSecondaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             if (item.purchased && item.purchasedAt != null)
               Text(
                 '${l10n.purchased} ${item.purchasedAt!.toLocal().toString().split(' ').first}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
               ),
             const SizedBox(height: 12),
             Wrap(
@@ -352,10 +461,31 @@ class _WishTile extends StatelessWidget {
                     icon: const Icon(Icons.check, size: 18),
                     label: Text(l10n.purchased),
                   ),
+                if (item.itemUrl != null && item.itemUrl!.isNotEmpty)
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final url = Uri.parse(item.itemUrl!);
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(
+                          url,
+                          mode: LaunchMode.externalApplication,
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.shopping_bag_outlined, size: 18),
+                    label: const Text('Beli / Link'),
+                  ),
                 TextButton.icon(
                   onPressed: onDelete,
-                  icon: Icon(Icons.delete_outline, size: 18, color: scheme.error),
-                  label: Text(l10n.delete, style: TextStyle(color: scheme.error)),
+                  icon: Icon(
+                    Icons.delete_outline,
+                    size: 18,
+                    color: scheme.error,
+                  ),
+                  label: Text(
+                    l10n.delete,
+                    style: TextStyle(color: scheme.error),
+                  ),
                 ),
               ],
             ),
@@ -363,5 +493,23 @@ class _WishTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getMonthName(int m) {
+    const names = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Ags',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
+    return names[m - 1];
   }
 }

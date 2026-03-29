@@ -33,8 +33,11 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<void> upsertIncome(Income income) async {
-    await _db.insert('incomes', _incomeToRow(income),
-        conflictAlgorithm: ConflictAlgorithm.replace);
+    await _db.insert(
+      'incomes',
+      _incomeToRow(income),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   @override
@@ -59,8 +62,11 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<void> upsertExpense(Expense expense) async {
-    await _db.insert('expenses', _expenseToRow(expense),
-        conflictAlgorithm: ConflictAlgorithm.replace);
+    await _db.insert(
+      'expenses',
+      _expenseToRow(expense),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   @override
@@ -70,7 +76,10 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<List<WishlistItem>> getWishlist({bool includePurchased = true}) async {
-    final rows = await _db.query('wishlist', orderBy: 'purchased ASC, name ASC');
+    final rows = await _db.query(
+      'wishlist',
+      orderBy: 'purchased ASC, name ASC',
+    );
     final items = rows.map(_wishFromRow).toList();
     if (includePurchased) return items;
     return items.where((w) => !w.purchased).toList();
@@ -78,8 +87,11 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<void> upsertWishlistItem(WishlistItem item) async {
-    await _db.insert('wishlist', _wishToRow(item),
-        conflictAlgorithm: ConflictAlgorithm.replace);
+    await _db.insert(
+      'wishlist',
+      _wishToRow(item),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   @override
@@ -96,8 +108,11 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<void> upsertSavingsGoal(SavingsGoal goal) async {
-    await _db.insert('savings_goal', _savingsToRow(goal),
-        conflictAlgorithm: ConflictAlgorithm.replace);
+    await _db.insert(
+      'savings_goal',
+      _savingsToRow(goal),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   @override
@@ -119,7 +134,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
       chart = await _monthlyDailyBuckets(from, to, languageCode);
     } else {
       from = DateTime(anchor.year, anchor.month, anchor.day);
-      to = from.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
+      to = from
+          .add(const Duration(days: 1))
+          .subtract(const Duration(milliseconds: 1));
       chart = await _last7DayBuckets(end: from, languageCode: languageCode);
     }
 
@@ -153,11 +170,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
       final d = DateTime(from.year, from.month, i + 1);
       return MapEntry(
         d,
-        ChartPoint(
-          label: _dayLabel(d, languageCode),
-          income: 0,
-          expense: 0,
-        ),
+        ChartPoint(label: _dayLabel(d, languageCode), income: 0, expense: 0),
       );
     });
     final map = Map<DateTime, ChartPoint>.fromEntries(buckets);
@@ -184,8 +197,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
         expense: existing.expense + (row['amount']! as num).toDouble(),
       );
     }
-    final sorted = map.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
+    final sorted = map.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
     return sorted.map((e) => e.value).toList();
   }
 
@@ -198,8 +210,11 @@ class FinanceRepositoryImpl implements FinanceRepository {
     final expenses = await _db.query('expenses');
     final map = <DateTime, ChartPoint>{};
     for (var i = 0; i < 7; i++) {
-      final d = DateTime(start.year, start.month, start.day)
-          .add(Duration(days: i));
+      final d = DateTime(
+        start.year,
+        start.month,
+        start.day,
+      ).add(Duration(days: i));
       map[d] = ChartPoint(
         label: _dayLabel(d, languageCode),
         income: 0,
@@ -223,8 +238,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
     addMoney(incomes, true);
     addMoney(expenses, false);
-    final sorted = map.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
+    final sorted = map.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
     return sorted.map((e) => e.value).toList();
   }
 
@@ -245,19 +259,26 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<ExportBundle> exportAll() async {
-    final incomes = (await _db.query('incomes', orderBy: 'date_iso DESC'))
-        .map(_incomeFromRow)
-        .toList();
-    final expenses = (await _db.query('expenses', orderBy: 'date_iso DESC'))
-        .map(_expenseFromRow)
-        .toList();
-    final wishlist =
-        (await _db.query('wishlist')).map(_wishFromRow).toList();
-    return ExportBundle(incomes: incomes, expenses: expenses, wishlist: wishlist);
+    final incomes = (await _db.query(
+      'incomes',
+      orderBy: 'date_iso DESC',
+    )).map(_incomeFromRow).toList();
+    final expenses = (await _db.query(
+      'expenses',
+      orderBy: 'date_iso DESC',
+    )).map(_expenseFromRow).toList();
+    final wishlist = (await _db.query('wishlist')).map(_wishFromRow).toList();
+    return ExportBundle(
+      incomes: incomes,
+      expenses: expenses,
+      wishlist: wishlist,
+    );
   }
 
   Future<double> _sumColumn(String table, String column) async {
-    final r = await _db.rawQuery('SELECT COALESCE(SUM($column), 0) AS t FROM $table');
+    final r = await _db.rawQuery(
+      'SELECT COALESCE(SUM($column), 0) AS t FROM $table',
+    );
     return (r.first['t']! as num).toDouble();
   }
 
@@ -278,71 +299,79 @@ class FinanceRepositoryImpl implements FinanceRepository {
   }
 
   Income _incomeFromRow(Map<String, Object?> row) => Income(
-        id: row['id']! as String,
-        amount: (row['amount']! as num).toDouble(),
-        source: row['source']! as String,
-        date: DateTime.parse(row['date_iso']! as String),
-        note: row['note'] as String?,
-      );
+    id: row['id']! as String,
+    amount: (row['amount']! as num).toDouble(),
+    source: row['source']! as String,
+    date: DateTime.parse(row['date_iso']! as String),
+    note: row['note'] as String?,
+  );
 
   Map<String, Object?> _incomeToRow(Income i) => {
-        'id': i.id,
-        'amount': i.amount,
-        'source': i.source,
-        'date_iso': i.date.toIso8601String(),
-        'note': i.note,
-      };
+    'id': i.id,
+    'amount': i.amount,
+    'source': i.source,
+    'date_iso': i.date.toIso8601String(),
+    'note': i.note,
+  };
 
   Expense _expenseFromRow(Map<String, Object?> row) => Expense(
-        id: row['id']! as String,
-        amount: (row['amount']! as num).toDouble(),
-        category: row['category']! as String,
-        date: DateTime.parse(row['date_iso']! as String),
-        note: row['note'] as String?,
-      );
+    id: row['id']! as String,
+    amount: (row['amount']! as num).toDouble(),
+    category: row['category']! as String,
+    date: DateTime.parse(row['date_iso']! as String),
+    note: row['note'] as String?,
+  );
 
   Map<String, Object?> _expenseToRow(Expense e) => {
-        'id': e.id,
-        'amount': e.amount,
-        'category': e.category,
-        'date_iso': e.date.toIso8601String(),
-        'note': e.note,
-      };
+    'id': e.id,
+    'amount': e.amount,
+    'category': e.category,
+    'date_iso': e.date.toIso8601String(),
+    'note': e.note,
+  };
 
   WishlistItem _wishFromRow(Map<String, Object?> row) => WishlistItem(
-        id: row['id']! as String,
-        name: row['name']! as String,
-        estimatedPrice: (row['estimated_price']! as num).toDouble(),
-        priority: WishlistPriority.values
-            .firstWhere((p) => p.name == row['priority'], orElse: () => WishlistPriority.medium),
-        purchased: (row['purchased']! as int) == 1,
-        purchasedAt: row['purchased_at'] != null
-            ? DateTime.parse(row['purchased_at']! as String)
-            : null,
-      );
+    id: row['id']! as String,
+    name: row['name']! as String,
+    estimatedPrice: (row['estimated_price']! as num).toDouble(),
+    priority: WishlistPriority.values.firstWhere(
+      (p) => p.name == row['priority'],
+      orElse: () => WishlistPriority.medium,
+    ),
+    purchased: (row['purchased']! as int) == 1,
+    purchasedAt: row['purchased_at'] != null
+        ? DateTime.parse(row['purchased_at']! as String)
+        : null,
+    targetAmount: (row['target_amount'] as num?)?.toDouble() ?? 0.0,
+    savedAmount: (row['saved_amount'] as num?)?.toDouble() ?? 0.0,
+    itemUrl: row['item_url'] as String?,
+  );
 
   Map<String, Object?> _wishToRow(WishlistItem w) => {
-        'id': w.id,
-        'name': w.name,
-        'estimated_price': w.estimatedPrice,
-        'priority': w.priority.name,
-        'purchased': w.purchased ? 1 : 0,
-        'purchased_at': w.purchasedAt?.toIso8601String(),
-      };
+    'id': w.id,
+    'name': w.name,
+    'estimated_price': w.estimatedPrice,
+    'priority': w.priority.name,
+    'purchased': w.purchased ? 1 : 0,
+    'purchased_at': w.purchasedAt?.toIso8601String(),
+    'target_amount': w.targetAmount,
+    'saved_amount': w.savedAmount,
+    'item_url': w.itemUrl,
+  };
 
   SavingsGoal _savingsFromRow(Map<String, Object?> row) => SavingsGoal(
-        id: row['id']! as String,
-        title: row['title']! as String,
-        targetAmount: (row['target_amount']! as num).toDouble(),
-        savedAmount: (row['saved_amount'] as num?)?.toDouble() ?? 0.0,
-      );
+    id: row['id']! as String,
+    title: row['title']! as String,
+    targetAmount: (row['target_amount']! as num).toDouble(),
+    savedAmount: (row['saved_amount'] as num?)?.toDouble() ?? 0.0,
+  );
 
   Map<String, Object?> _savingsToRow(SavingsGoal s) => {
-        'id': s.id,
-        'title': s.title,
-        'target_amount': s.targetAmount,
-        'saved_amount': s.savedAmount,
-      };
+    'id': s.id,
+    'title': s.title,
+    'target_amount': s.targetAmount,
+    'saved_amount': s.savedAmount,
+  };
 
   @override
   Future<String> getLocaleCode() async {
@@ -357,11 +386,10 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<void> setLocaleCode(String code) async {
-    await _db.insert(
-      'app_prefs',
-      {'key': 'locale', 'value': code},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await _db.insert('app_prefs', {
+      'key': 'locale',
+      'value': code,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   @override
@@ -398,8 +426,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
   @override
   Future<DailySpendInsight> getDailySpendInsight(DateTime day) async {
     final monthStart = DateTime(day.year, day.month);
-    final monthEnd =
-        DateTime(day.year, day.month + 1, 0, 23, 59, 59, 999);
+    final monthEnd = DateTime(day.year, day.month + 1, 0, 23, 59, 59, 999);
     final todayStart = DateTime(day.year, day.month, day.day);
     final todayEnd = todayStart
         .add(const Duration(days: 1))
@@ -442,8 +469,8 @@ class FinanceRepositoryImpl implements FinanceRepository {
     final vibe = ratio < 0.75
         ? SpendVibe.hemat
         : ratio <= 1.25
-            ? SpendVibe.normal
-            : SpendVibe.boros;
+        ? SpendVibe.normal
+        : SpendVibe.boros;
 
     return DailySpendInsight(
       todayExpense: todayTotal,
@@ -474,28 +501,28 @@ class FinanceRepositoryImpl implements FinanceRepository {
   }
 
   QuickAction _quickFromRow(Map<String, Object?> row) => QuickAction(
-        id: row['id']! as String,
-        type: (row['action_type']! as String) == 'income'
-            ? QuickActionType.income
-            : QuickActionType.expense,
-        label: row['label']! as String,
-        emoji: row['emoji']! as String,
-        amount: (row['amount']! as num).toDouble(),
-        category: row['category'] as String?,
-        source: row['source'] as String?,
-        useCount: (row['use_count']! as num).toInt(),
-        sortOrder: (row['sort_order']! as num).toInt(),
-      );
+    id: row['id']! as String,
+    type: (row['action_type']! as String) == 'income'
+        ? QuickActionType.income
+        : QuickActionType.expense,
+    label: row['label']! as String,
+    emoji: row['emoji']! as String,
+    amount: (row['amount']! as num).toDouble(),
+    category: row['category'] as String?,
+    source: row['source'] as String?,
+    useCount: (row['use_count']! as num).toInt(),
+    sortOrder: (row['sort_order']! as num).toInt(),
+  );
 
   Map<String, Object?> _quickToRow(QuickAction a) => {
-        'id': a.id,
-        'action_type': a.type == QuickActionType.income ? 'income' : 'expense',
-        'label': a.label,
-        'emoji': a.emoji,
-        'amount': a.amount,
-        'category': a.category,
-        'source': a.source,
-        'use_count': a.useCount,
-        'sort_order': a.sortOrder,
-      };
+    'id': a.id,
+    'action_type': a.type == QuickActionType.income ? 'income' : 'expense',
+    'label': a.label,
+    'emoji': a.emoji,
+    'amount': a.amount,
+    'category': a.category,
+    'source': a.source,
+    'use_count': a.useCount,
+    'sort_order': a.sortOrder,
+  };
 }
