@@ -28,8 +28,11 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
   late final TextEditingController _searchCtrl;
   static const _uuid = Uuid();
   final Set<String> _selectedExpenseIds = <String>{};
+  DateTime? _singleDate;
+  DateTimeRange? _dateRange;
 
   bool get _isSelecting => _selectedExpenseIds.isNotEmpty;
+  bool get _hasDateFilter => _singleDate != null || _dateRange != null;
 
   @override
   void initState() {
@@ -61,7 +64,128 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     setState(_selectedExpenseIds.clear);
   }
 
-  Future<void> _deleteSelectedExpenses(BuildContext context) async {
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  bool _matchesDateFilter(DateTime value) {
+    if (_singleDate != null) {
+      return _isSameDay(value, _singleDate!);
+    }
+    if (_dateRange != null) {
+      final start = DateTime(
+        _dateRange!.start.year,
+        _dateRange!.start.month,
+        _dateRange!.start.day,
+      );
+      final endExclusive = DateTime(
+        _dateRange!.end.year,
+        _dateRange!.end.month,
+        _dateRange!.end.day,
+      ).add(const Duration(days: 1));
+      return !value.isBefore(start) && value.isBefore(endExclusive);
+    }
+    return true;
+  }
+
+  String _dateFilterLabel(String lang) {
+    if (_singleDate != null) {
+      final date = formatShortDate(_singleDate!, languageCode: lang);
+      return lang == 'id' ? 'Tanggal: $date' : 'Date: $date';
+    }
+    if (_dateRange != null) {
+      final start = formatShortDate(_dateRange!.start, languageCode: lang);
+      final end = formatShortDate(_dateRange!.end, languageCode: lang);
+      return lang == 'id' ? 'Rentang: $start - $end' : 'Range: $start - $end';
+    }
+    return '';
+  }
+
+  Future<void> _openDateFilter() async {
+    if (_isSelecting) return;
+    final lang = Localizations.localeOf(context).languageCode;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.event_outlined),
+              title: Text(
+                lang == 'id' ? 'Pilih satu tanggal' : 'Pick one date',
+              ),
+              onTap: () => Navigator.pop(ctx, 'single'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.date_range_outlined),
+              title: Text(
+                lang == 'id' ? 'Pilih rentang tanggal' : 'Pick date range',
+              ),
+              onTap: () => Navigator.pop(ctx, 'range'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.filter_alt_off_outlined),
+              title: Text(
+                lang == 'id' ? 'Reset filter tanggal' : 'Clear date filter',
+              ),
+              onTap: () => Navigator.pop(ctx, 'clear'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted || action == null) return;
+
+    if (action == 'single') {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: _singleDate ?? DateTime.now(),
+        firstDate: DateTime(2000),
+        lastDate: DateTime(2100),
+      );
+      if (!mounted || picked == null) return;
+      setState(() {
+        _singleDate = picked;
+        _dateRange = null;
+      });
+      _clearSelection();
+      return;
+    }
+
+    if (action == 'range') {
+      final now = DateTime.now();
+      final initial =
+          _dateRange ??
+          DateTimeRange(start: now.subtract(const Duration(days: 7)), end: now);
+      final picked = await showDateRangePicker(
+        context: context,
+        initialDateRange: initial,
+        firstDate: DateTime(2000),
+        lastDate: DateTime(2100),
+      );
+      if (!mounted || picked == null) return;
+      setState(() {
+        _dateRange = picked;
+        _singleDate = null;
+      });
+      _clearSelection();
+      return;
+    }
+
+    if (action == 'clear') {
+      setState(() {
+        _singleDate = null;
+        _dateRange = null;
+      });
+      _clearSelection();
+    }
+  }
+
+  Future<void> _deleteSelectedExpenses() async {
     if (_selectedExpenseIds.isEmpty) return;
     final l10n = AppLocalizations.of(context)!;
     final lang = Localizations.localeOf(context).languageCode;
@@ -97,7 +221,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     ref.invalidate(expenseListProvider);
     ref.invalidate(dashboardSummaryProvider);
     ref.invalidate(dailyInsightProvider);
-    if (!context.mounted) return;
+    if (!mounted) return;
     final msg = lang == 'id'
         ? '$count pengeluaran dihapus'
         : '$count expenses deleted';
@@ -122,15 +246,14 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     ref.invalidate(expenseListProvider);
     ref.invalidate(dashboardSummaryProvider);
     ref.invalidate(dailyInsightProvider);
-    if (mounted) {
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.recorded),
-          duration: const Duration(milliseconds: 500),
-        ),
-      );
-    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.recorded),
+        duration: const Duration(milliseconds: 500),
+      ),
+    );
   }
 
   @override
@@ -143,6 +266,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     final selectedLabel = lang == 'id'
         ? '${_selectedExpenseIds.length} dipilih'
         : '${_selectedExpenseIds.length} selected';
+    final dateFilterLabel = _dateFilterLabel(lang);
 
     return Scaffold(
       appBar: AppBar(
@@ -158,21 +282,31 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                 IconButton(
                   tooltip: l10n.delete,
                   icon: const Icon(Icons.delete_outline),
-                  onPressed: () => _deleteSelectedExpenses(context),
+                  onPressed: _deleteSelectedExpenses,
                 ),
               ]
             : [
                 IconButton(
-                  tooltip: l10n.aiInput,
-                  icon: const Icon(Icons.auto_fix_high_outlined),
-                  onPressed: () => showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    useSafeArea: true,
-                    showDragHandle: true,
-                    builder: (ctx) => const AiExpenseSheet(),
+                  tooltip: lang == 'id' ? 'Filter tanggal' : 'Filter by date',
+                  icon: Icon(
+                    _hasDateFilter
+                        ? Icons.filter_alt
+                        : Icons.filter_alt_outlined,
                   ),
+                  onPressed: _openDateFilter,
                 ),
+                // Temporarily disabled AI input / smart quick add
+                // IconButton(
+                //   tooltip: l10n.aiInput,
+                //   icon: const Icon(Icons.auto_fix_high_outlined),
+                //   onPressed: () => showModalBottomSheet<void>(
+                //     context: context,
+                //     isScrollControlled: true,
+                //     useSafeArea: true,
+                //     showDragHandle: true,
+                //     builder: (ctx) => const AiExpenseSheet(),
+                //   ),
+                // ),
               ],
       ),
       body: Column(
@@ -188,27 +322,53 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
               ),
             ),
           ),
+          if (_hasDateFilter)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      dateFilterLabel,
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _singleDate = null;
+                        _dateRange = null;
+                      });
+                      _clearSelection();
+                    },
+                    child: Text(lang == 'id' ? 'Reset' : 'Clear'),
+                  ),
+                ],
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(
               children: [
                 Text(
                   l10n.smartQuickAdd,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const Spacer(),
                 TextButton.icon(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (context) =>
-                          const QuickActionsCustomizeScreen(),
-                    ),
-                  ).then((_) {
-                    ref.invalidate(quickActionsProvider);
-                    ref.invalidate(quickActionsCustomizeProvider);
-                  }),
+                  onPressed: () => Navigator.of(context)
+                      .push(
+                        MaterialPageRoute<void>(
+                          builder: (context) =>
+                              const QuickActionsCustomizeScreen(),
+                        ),
+                      )
+                      .then((_) {
+                        ref.invalidate(quickActionsProvider);
+                        ref.invalidate(quickActionsCustomizeProvider);
+                      }),
                   icon: const Icon(Icons.tune, size: 18),
                   label: Text(l10n.customizeQuick),
                 ),
@@ -239,18 +399,23 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
               padding: EdgeInsets.all(16),
               child: LinearProgressIndicator(),
             ),
-            error: (e, _) => Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('$e'),
-            ),
+            error: (e, _) =>
+                Padding(padding: const EdgeInsets.all(16), child: Text('$e')),
           ),
           Expanded(
             child: listAsync.when(
               data: (items) {
-                if (items.isEmpty) {
+                final filtered = items
+                    .where((exp) => _matchesDateFilter(exp.date))
+                    .toList();
+                if (filtered.isEmpty) {
                   return EmptyState(
                     icon: Icons.receipt_long,
-                    title: query.isEmpty
+                    title: _hasDateFilter
+                        ? (lang == 'id'
+                              ? 'Tidak ada pengeluaran pada tanggal ini'
+                              : 'No expenses in this date filter')
+                        : query.isEmpty
                         ? l10n.noExpensesYet
                         : l10n.noSearchMatches,
                     subtitle: query.isEmpty ? l10n.tapToLog : null,
@@ -260,11 +425,11 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                   onRefresh: () async => ref.invalidate(expenseListProvider),
                   child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
-                    itemCount: items.length,
+                    itemCount: filtered.length,
                     separatorBuilder: (context, index) =>
                         const SizedBox(height: 8),
                     itemBuilder: (context, i) {
-                      final exp = items[i];
+                      final exp = filtered[i];
                       final selected = _selectedExpenseIds.contains(exp.id);
                       return SectionCard(
                         child: ListTile(
@@ -280,9 +445,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                             children: [
                               Text(
                                 formatMoney(exp.amount, languageCode: lang),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
+                                style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(
                                       color: AppTheme.spendStress,
                                       fontWeight: FontWeight.w600,
@@ -295,9 +458,9 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                                       : Icons.radio_button_unchecked,
                                   color: selected
                                       ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
+                                      : Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
                                 )
                               else
                                 PopupMenuButton<String>(
