@@ -4,7 +4,7 @@ import 'package:sqflite/sqflite.dart';
 
 class LocalDatabase {
   static const _name = 'catat_uang.db';
-  static const _version = 2;
+  static const _version = 3;
 
   static Future<Database> open() async {
     final dir = await getApplicationDocumentsDirectory();
@@ -34,6 +34,9 @@ class LocalDatabase {
       await _prefsAndQuickActions(db);
       await _seedPrefs(db);
       await _seedQuickActions(db);
+    }
+    if (oldVersion < 3) {
+      await db.execute('ALTER TABLE savings_goal ADD COLUMN saved_amount REAL NOT NULL DEFAULT 0.0');
     }
   }
 
@@ -70,7 +73,8 @@ class LocalDatabase {
       CREATE TABLE savings_goal (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
-        target_amount REAL NOT NULL
+        target_amount REAL NOT NULL,
+        saved_amount REAL NOT NULL DEFAULT 0.0
       );
     ''');
   }
@@ -102,6 +106,7 @@ class LocalDatabase {
       'id': 'default',
       'title': 'Target tabungan',
       'target_amount': 5000000,
+      'saved_amount': 0.0,
     });
   }
 

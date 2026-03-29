@@ -17,6 +17,8 @@ class DashboardFlowCard extends StatelessWidget {
     required this.goalTitle,
     required this.goalProgressLabel,
     required this.progress,
+    required this.savedFormatted,
+    required this.targetFormatted,
     required this.onTapGoal,
     required this.monthlySavingsTitle,
     required this.quickIncomeTitle,
@@ -34,6 +36,8 @@ class DashboardFlowCard extends StatelessWidget {
   final String goalTitle;
   final String goalProgressLabel;
   final double progress;
+  final String savedFormatted;
+  final String targetFormatted;
   final VoidCallback onTapGoal;
   final String monthlySavingsTitle;
   final String quickIncomeTitle;
@@ -179,7 +183,7 @@ class DashboardFlowCard extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            "${AppTheme.positiveMoney == balanceColor ? 'Rp0' : 'Rp0'} / ${goalProgressLabel == '0%' ? 'Rp1.000' : 'Rp0'}", // Hardcoded to match mockup style visually if requested
+            "$savedFormatted / $targetFormatted",
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w500,
                   color: AppTheme.textMuted,

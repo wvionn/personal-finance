@@ -116,7 +116,7 @@ class DashboardScreen extends ConsumerWidget {
     final g = goal ?? _defaultSavingsGoal;
     final progress = g.targetAmount <= 0
         ? 0.0
-        : (s.balance / g.targetAmount).clamp(0.0, 1.0);
+        : (g.savedAmount / g.targetAmount).clamp(0.0, 1.0);
     return DashboardFlowCard(
       balanceLabel: l10n.balance,
       balanceFormatted: formatMoney(s.balance, languageCode: lang),
@@ -127,6 +127,8 @@ class DashboardScreen extends ConsumerWidget {
       goalTitle: '${l10n.savingsGoal} · ${g.title}',
       goalProgressLabel: '${(progress * 100).round()}%',
       progress: progress,
+      savedFormatted: formatMoney(g.savedAmount, languageCode: lang),
+      targetFormatted: formatMoney(g.targetAmount, languageCode: lang),
       onTapGoal: () => showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
@@ -135,7 +137,7 @@ class DashboardScreen extends ConsumerWidget {
         builder: (ctx) => SavingsGoalEditorSheet(initial: g),
       ),
       monthlySavingsTitle:
-          lang == 'id' ? 'Tabungan bulanan' : 'Monthly savings',
+          lang == 'id' ? 'Tabungan harian' : 'Daily savings',
       quickIncomeTitle: lang == 'id' ? 'Pemasukan cepat' : 'Quick income',
       incomeQuickActions: incomeActions,
       lang: lang,

@@ -334,12 +334,14 @@ class FinanceRepositoryImpl implements FinanceRepository {
         id: row['id']! as String,
         title: row['title']! as String,
         targetAmount: (row['target_amount']! as num).toDouble(),
+        savedAmount: (row['saved_amount'] as num?)?.toDouble() ?? 0.0,
       );
 
   Map<String, Object?> _savingsToRow(SavingsGoal s) => {
         'id': s.id,
         'title': s.title,
         'target_amount': s.targetAmount,
+        'saved_amount': s.savedAmount,
       };
 
   @override
