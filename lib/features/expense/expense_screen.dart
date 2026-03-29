@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../core/providers/core_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/localized_labels.dart';
 import '../../core/widgets/empty_state.dart';
-import '../../core/widgets/quick_pill_button.dart';
 import '../../core/widgets/section_card.dart';
 import '../../domain/entities/expense.dart';
-import '../../domain/entities/quick_action.dart';
 import '../../l10n/app_localizations.dart';
 import '../dashboard/dashboard_providers.dart';
-// import 'ai_expense_sheet.dart';
 import 'expense_form_sheet.dart';
 import 'expense_providers.dart';
-import 'quick_actions_customize_screen.dart';
 
 class ExpenseScreen extends ConsumerStatefulWidget {
   const ExpenseScreen({super.key});
@@ -26,7 +22,6 @@ class ExpenseScreen extends ConsumerStatefulWidget {
 
 class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
   late final TextEditingController _searchCtrl;
-  static const _uuid = Uuid();
   final Set<String> _selectedExpenseIds = <String>{};
   DateTime? _singleDate;
   DateTimeRange? _dateRange;
@@ -88,22 +83,22 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     return true;
   }
 
-  String _dateFilterLabel(String lang) {
+  String _dateFilterLabel(AppLocalizations l10n, String lang) {
     if (_singleDate != null) {
       final date = formatShortDate(_singleDate!, languageCode: lang);
-      return lang == 'id' ? 'Tanggal: $date' : 'Date: $date';
+      return l10n.dateFilterDateLabel(date);
     }
     if (_dateRange != null) {
       final start = formatShortDate(_dateRange!.start, languageCode: lang);
       final end = formatShortDate(_dateRange!.end, languageCode: lang);
-      return lang == 'id' ? 'Rentang: $start - $end' : 'Range: $start - $end';
+      return l10n.dateFilterRangeLabel(start, end);
     }
     return '';
   }
 
   Future<void> _openDateFilter() async {
     if (_isSelecting) return;
-    final lang = Localizations.localeOf(context).languageCode;
+    final l10n = AppLocalizations.of(context)!;
     final action = await showModalBottomSheet<String>(
       context: context,
       useSafeArea: true,
@@ -114,23 +109,17 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.event_outlined),
-              title: Text(
-                lang == 'id' ? 'Pilih satu tanggal' : 'Pick one date',
-              ),
+              title: Text(l10n.pickOneDate),
               onTap: () => Navigator.pop(ctx, 'single'),
             ),
             ListTile(
               leading: const Icon(Icons.date_range_outlined),
-              title: Text(
-                lang == 'id' ? 'Pilih rentang tanggal' : 'Pick date range',
-              ),
+              title: Text(l10n.pickDateRange),
               onTap: () => Navigator.pop(ctx, 'range'),
             ),
             ListTile(
               leading: const Icon(Icons.filter_alt_off_outlined),
-              title: Text(
-                lang == 'id' ? 'Reset filter tanggal' : 'Clear date filter',
-              ),
+              title: Text(l10n.clearDateFilter),
               onTap: () => Navigator.pop(ctx, 'clear'),
             ),
           ],
@@ -188,11 +177,8 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
   Future<void> _deleteSelectedExpenses() async {
     if (_selectedExpenseIds.isEmpty) return;
     final l10n = AppLocalizations.of(context)!;
-    final lang = Localizations.localeOf(context).languageCode;
     final count = _selectedExpenseIds.length;
-    final content = lang == 'id'
-        ? 'Hapus $count pengeluaran terpilih?'
-        : 'Delete $count selected expenses?';
+    final content = l10n.deleteSelectedExpensesConfirm(count);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -222,38 +208,18 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     ref.invalidate(dashboardSummaryProvider);
     ref.invalidate(dailyInsightProvider);
     if (!mounted) return;
-    final msg = lang == 'id'
-        ? '$count pengeluaran dihapus'
-        : '$count expenses deleted';
+    final msg = l10n.deleteSelectedExpensesDone(count);
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  Future<void> _fireQuick(QuickAction qa) async {
-    if (qa.category == null) return;
-    final repo = ref.read(financeRepositoryProvider);
-    await repo.upsertExpense(
-      Expense(
-        id: _uuid.v4(),
-        amount: qa.amount,
-        category: qa.category!,
-        date: DateTime.now(),
-        note: '${qa.emoji} ${qa.label}',
-      ),
-    );
-    await repo.incrementQuickActionUse(qa.id);
-    ref.invalidate(quickActionsProvider);
+  Future<void> _refreshExpensePage() async {
+    _clearSelection();
     ref.invalidate(expenseListProvider);
+    ref.invalidate(quickActionsProvider);
     ref.invalidate(dashboardSummaryProvider);
+    ref.invalidate(savingsGoalProvider);
     ref.invalidate(dailyInsightProvider);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.recorded),
-        duration: const Duration(milliseconds: 500),
-      ),
-    );
   }
 
   @override
@@ -262,11 +228,8 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     final lang = Localizations.localeOf(context).languageCode;
     final listAsync = ref.watch(expenseListProvider);
     final query = ref.watch(expenseSearchProvider);
-    final quickAsync = ref.watch(quickActionsProvider);
-    final selectedLabel = lang == 'id'
-        ? '${_selectedExpenseIds.length} dipilih'
-        : '${_selectedExpenseIds.length} selected';
-    final dateFilterLabel = _dateFilterLabel(lang);
+    final selectedLabel = l10n.selectedCount(_selectedExpenseIds.length);
+    final dateFilterLabel = _dateFilterLabel(l10n, lang);
 
     return Scaffold(
       appBar: AppBar(
@@ -287,7 +250,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
               ]
             : [
                 IconButton(
-                  tooltip: lang == 'id' ? 'Filter tanggal' : 'Filter by date',
+                  tooltip: l10n.dateFilter,
                   icon: Icon(
                     _hasDateFilter
                         ? Icons.filter_alt
@@ -295,18 +258,6 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                   ),
                   onPressed: _openDateFilter,
                 ),
-                // Temporarily disabled AI input / smart quick add
-                // IconButton(
-                //   tooltip: l10n.aiInput,
-                //   icon: const Icon(Icons.auto_fix_high_outlined),
-                //   onPressed: () => showModalBottomSheet<void>(
-                //     context: context,
-                //     isScrollControlled: true,
-                //     useSafeArea: true,
-                //     showDragHandle: true,
-                //     builder: (ctx) => const AiExpenseSheet(),
-                //   ),
-                // ),
               ],
       ),
       body: Column(
@@ -341,67 +292,11 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                       });
                       _clearSelection();
                     },
-                    child: Text(lang == 'id' ? 'Reset' : 'Clear'),
+                    child: Text(l10n.reset),
                   ),
                 ],
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Row(
-              children: [
-                Text(
-                  l10n.smartQuickAdd,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: () => Navigator.of(context)
-                      .push(
-                        MaterialPageRoute<void>(
-                          builder: (context) =>
-                              const QuickActionsCustomizeScreen(),
-                        ),
-                      )
-                      .then((_) {
-                        ref.invalidate(quickActionsProvider);
-                        ref.invalidate(quickActionsCustomizeProvider);
-                      }),
-                  icon: const Icon(Icons.tune, size: 18),
-                  label: Text(l10n.customizeQuick),
-                ),
-              ],
-            ),
-          ),
-          quickAsync.when(
-            data: (actions) => Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final qa in actions)
-                    QuickPillButton(
-                      compact: true,
-                      label: '${qa.emoji} ${qa.label}',
-                      subtitle:
-                          '− ${formatMoney(qa.amount, languageCode: lang)}',
-                      borderColor: AppTheme.quickExpenseAccent,
-                      labelColor: AppTheme.textMain,
-                      onTap: () => _fireQuick(qa),
-                    ),
-                ],
-              ),
-            ),
-            loading: () => const Padding(
-              padding: EdgeInsets.all(16),
-              child: LinearProgressIndicator(),
-            ),
-            error: (e, _) =>
-                Padding(padding: const EdgeInsets.all(16), child: Text('$e')),
-          ),
           Expanded(
             child: listAsync.when(
               data: (items) {
@@ -409,20 +304,28 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                     .where((exp) => _matchesDateFilter(exp.date))
                     .toList();
                 if (filtered.isEmpty) {
-                  return EmptyState(
-                    icon: Icons.receipt_long,
-                    title: _hasDateFilter
-                        ? (lang == 'id'
-                              ? 'Tidak ada pengeluaran pada tanggal ini'
-                              : 'No expenses in this date filter')
-                        : query.isEmpty
-                        ? l10n.noExpensesYet
-                        : l10n.noSearchMatches,
-                    subtitle: query.isEmpty ? l10n.tapToLog : null,
+                  return RefreshIndicator(
+                    onRefresh: _refreshExpensePage,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
+                      children: [
+                        const SizedBox(height: 64),
+                        EmptyState(
+                          icon: Icons.receipt_long,
+                          title: _hasDateFilter
+                              ? l10n.noExpensesInDateFilter
+                              : query.isEmpty
+                              ? l10n.noExpensesYet
+                              : l10n.noSearchMatches,
+                          subtitle: query.isEmpty ? l10n.tapToLog : null,
+                        ),
+                      ],
+                    ),
                   );
                 }
                 return RefreshIndicator(
-                  onRefresh: () async => ref.invalidate(expenseListProvider),
+                  onRefresh: _refreshExpensePage,
                   child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
                     itemCount: filtered.length,
@@ -435,7 +338,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
                           selected: selected,
-                          title: Text(exp.category),
+                          title: Text(expenseCategoryLabel(exp.category, lang)),
                           subtitle: Text(
                             '${formatShortDate(exp.date, languageCode: lang)}'
                             '${exp.note != null ? ' · ${exp.note}' : ''}',

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/providers/core_providers.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/localized_labels.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/section_card.dart';
 import '../../domain/entities/expense.dart';
@@ -136,19 +138,20 @@ class WishlistScreen extends ConsumerWidget {
     WidgetRef ref,
     WishlistItem w,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete item?'),
-        content: Text('Remove "${w.name}" from the wishlist?'),
+        title: Text(l10n.deleteWishlistItemTitle),
+        content: Text(l10n.deleteWishlistItemBody(w.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -164,24 +167,20 @@ class WishlistScreen extends ConsumerWidget {
     WidgetRef ref,
     WishlistItem w,
   ) async {
-    final lang = Localizations.localeOf(context).languageCode;
+    final l10n = AppLocalizations.of(context)!;
     final addExpense = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(lang == 'id' ? 'Tandai sudah dibeli' : 'Mark as purchased'),
-        content: Text(
-          lang == 'id'
-              ? 'Apakah kamu ingin mencatat ini ke pengeluaran bulan ini?'
-              : 'Also log this as an expense? You can set amount and category next.',
-        ),
+        title: Text(l10n.markPurchasedTitle),
+        content: Text(l10n.markPurchasedBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text(lang == 'id' ? 'Tidak, tandai saja' : 'No, just mark'),
+            child: Text(l10n.markOnly),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(lang == 'id' ? 'Catat Pengeluaran' : 'Add expense'),
+            child: Text(l10n.addExpense),
           ),
         ],
       ),
@@ -189,88 +188,24 @@ class WishlistScreen extends ConsumerWidget {
     if (addExpense == null || !context.mounted) return;
 
     var amount = w.estimatedPrice;
-    var category = 'Shopping';
+    var category = kExpenseCategories.firstWhere(
+      (c) => c.toLowerCase() == 'belanja',
+      orElse: () => kExpenseCategories.first,
+    );
     final date = DateTime.now();
-    final note = 'Wishlist: ${w.name}';
+    final note = '${l10n.wishlistExpenseNotePrefix}: ${w.name}';
 
     if (addExpense) {
-      final amountCtrl = TextEditingController(
-        text: w.estimatedPrice.toString(),
+      final result = await showDialog<_WishlistExpenseDraft>(
+        context: context,
+        builder: (_) => _WishlistExpenseDialog(
+          initialAmount: w.estimatedPrice,
+          initialCategory: category,
+        ),
       );
-      var cat = category;
-      final formKey = GlobalKey<FormState>();
-      try {
-        final ok = await showDialog<bool>(
-          context: context,
-          builder: (ctx) {
-            return StatefulBuilder(
-              builder: (context, setSt) {
-                return AlertDialog(
-                  title: const Text('Expense details'),
-                  content: Form(
-                    key: formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextFormField(
-                          controller: amountCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Amount',
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          validator: (v) {
-                            final n = double.tryParse(v ?? '');
-                            if (n == null || n <= 0) {
-                              return 'Enter a positive amount';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<String>(
-                          // ignore: deprecated_member_use
-                          value: cat,
-                          items: kExpenseCategories
-                              .map(
-                                (c) =>
-                                    DropdownMenuItem(value: c, child: Text(c)),
-                              )
-                              .toList(),
-                          onChanged: (v) => setSt(() => cat = v ?? cat),
-                          decoration: const InputDecoration(
-                            labelText: 'Category',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancel'),
-                    ),
-                    FilledButton(
-                      onPressed: () {
-                        if (formKey.currentState!.validate()) {
-                          Navigator.pop(ctx, true);
-                        }
-                      },
-                      child: const Text('Confirm'),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        );
-        if (ok != true || !context.mounted) return;
-        amount = double.parse(amountCtrl.text.trim());
-        category = cat;
-      } finally {
-        amountCtrl.dispose();
-      }
+      if (result == null || !context.mounted) return;
+      amount = result.amount;
+      category = result.category;
     }
 
     final repo = ref.read(financeRepositoryProvider);
@@ -328,27 +263,28 @@ class _WishTile extends StatelessWidget {
     String getEstimation() {
       if (item.targetAmount <= 0) return '';
       final remaining = item.targetAmount - item.savedAmount;
-      if (remaining <= 0)
-        return lang == 'id'
-            ? 'Dana sudah terkumpul! \u{1F389}'
-            : 'Funds are ready! \u{1F389}';
+      if (remaining <= 0) {
+        return '${l10n.fundsReady}\u{1F389}';
+      }
 
       final monthly = avgSavings > 0
           ? avgSavings
           : 500000.0; // fallback asumsi 500rb
       final monthsNeeded = (remaining / monthly).ceil();
-      if (monthsNeeded > 120)
-        return lang == 'id'
-            ? '>10 tahun lagi \u{1F622}'
-            : '>10 years away \u{1F622}';
+      if (monthsNeeded > 120) {
+        return '${l10n.overTenYears}\u{1F622}';
+      }
 
       final estimatedDate = DateTime.now().add(
         Duration(days: 30 * monthsNeeded),
       );
-      final monthStr = _getMonthName(estimatedDate.month);
-      return lang == 'id'
-          ? 'Kebeli di $monthStr ${estimatedDate.year} (jika tertabung ${formatMoney(monthly, languageCode: lang)}/bln)'
-          : 'Achievable by $monthStr ${estimatedDate.year}';
+      final locale = lang == 'en' ? 'en_US' : 'id_ID';
+      final monthStr = DateFormat.MMM(locale).format(estimatedDate);
+      if (lang == 'id') {
+        return '${l10n.achievableBy(monthStr, estimatedDate.year.toString())} '
+            '(jika tertabung ${formatMoney(monthly, languageCode: lang)}/bln)';
+      }
+      return l10n.achievableBy(monthStr, estimatedDate.year.toString());
     }
 
     return Padding(
@@ -399,7 +335,9 @@ class _WishTile extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${formatMoney(item.savedAmount, languageCode: lang)} terkumpul',
+                    l10n.savedAmountLabel(
+                      formatMoney(item.savedAmount, languageCode: lang),
+                    ),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   Text(
@@ -473,7 +411,7 @@ class _WishTile extends StatelessWidget {
                       }
                     },
                     icon: const Icon(Icons.shopping_bag_outlined, size: 18),
-                    label: const Text('Beli / Link'),
+                    label: Text(l10n.buyLink),
                   ),
                 TextButton.icon(
                   onPressed: onDelete,
@@ -494,22 +432,110 @@ class _WishTile extends StatelessWidget {
       ),
     );
   }
+}
 
-  String _getMonthName(int m) {
-    const names = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Ags',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
-    return names[m - 1];
+class _WishlistExpenseDraft {
+  const _WishlistExpenseDraft({required this.amount, required this.category});
+
+  final double amount;
+  final String category;
+}
+
+class _WishlistExpenseDialog extends StatefulWidget {
+  const _WishlistExpenseDialog({
+    required this.initialAmount,
+    required this.initialCategory,
+  });
+
+  final double initialAmount;
+  final String initialCategory;
+
+  @override
+  State<_WishlistExpenseDialog> createState() => _WishlistExpenseDialogState();
+}
+
+class _WishlistExpenseDialogState extends State<_WishlistExpenseDialog> {
+  late final TextEditingController _amountCtrl;
+  late String _category;
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _amountCtrl = TextEditingController(text: widget.initialAmount.toString());
+    _category = widget.initialCategory;
+  }
+
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final lang = Localizations.localeOf(context).languageCode;
+    return AlertDialog(
+      title: Text(l10n.expenseDetails),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _amountCtrl,
+              decoration: InputDecoration(labelText: l10n.amountLabel),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              validator: (v) {
+                final n = double.tryParse(v ?? '');
+                if (n == null || n <= 0) {
+                  return l10n.validatorAmountPositive;
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              // ignore: deprecated_member_use
+              value: _category,
+              items: kExpenseCategories
+                  .map(
+                    (c) => DropdownMenuItem(
+                      value: c,
+                      child: Text(expenseCategoryLabel(c, lang)),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() => _category = v);
+              },
+              decoration: InputDecoration(labelText: l10n.categoryField),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (!_formKey.currentState!.validate()) return;
+            Navigator.of(context).pop(
+              _WishlistExpenseDraft(
+                amount: double.parse(_amountCtrl.text.trim()),
+                category: _category,
+              ),
+            );
+          },
+          child: Text(l10n.confirm),
+        ),
+      ],
+    );
   }
 }

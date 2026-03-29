@@ -29,19 +29,19 @@ class NotificationService {
       requestSoundPermission: true,
     );
     await _plugin.initialize(
-      const InitializationSettings(
-        android: androidInit,
-        iOS: darwinInit,
-      ),
+      const InitializationSettings(android: androidInit, iOS: darwinInit),
     );
 
-    final androidPlugin =
-        _plugin.resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     await androidPlugin?.requestNotificationsPermission();
 
-    final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
-        IOSFlutterLocalNotificationsPlugin>();
+    final iosPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
     await iosPlugin?.requestPermissions(alert: true, badge: true, sound: true);
 
     _initialized = true;
@@ -83,7 +83,7 @@ class NotificationService {
 
     await _plugin.zonedSchedule(
       401,
-      'Catat Uang · siang',
+      'Anti Boncos · siang',
       BudgetNudgeMessages.afternoon(seed),
       _nextInstanceOf(12, 30),
       d,
@@ -95,7 +95,7 @@ class NotificationService {
 
     await _plugin.zonedSchedule(
       402,
-      'Catat Uang · masih siang',
+      'Anti Boncos · masih siang',
       BudgetNudgeMessages.afternoonLate(seed + 1),
       _nextInstanceOf(13, 45),
       d,
@@ -107,7 +107,7 @@ class NotificationService {
 
     await _plugin.zonedSchedule(
       403,
-      'Catat Uang · malam',
+      'Anti Boncos · malam',
       BudgetNudgeMessages.evening(seed + 2),
       _nextInstanceOf(20, 0),
       d,
@@ -119,7 +119,7 @@ class NotificationService {
 
     await _plugin.zonedSchedule(
       404,
-      'Catat Uang · bablas',
+      'Anti Boncos · bablas',
       BudgetNudgeMessages.night(seed + 3),
       _nextInstanceOf(21, 30),
       d,
@@ -132,8 +132,7 @@ class NotificationService {
 
   static tz.TZDateTime _nextInstanceOf(int hour, int minute) {
     final now = tz.TZDateTime.now(tz.local);
-    var s =
-        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    var s = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
     if (!s.isAfter(now)) {
       s = s.add(const Duration(days: 1));
     }
@@ -145,7 +144,7 @@ class NotificationService {
     await ensureInitialized();
     await _plugin.show(
       499,
-      'Catat Uang',
+      'Anti Boncos',
       BudgetNudgeMessages.idleRandom(),
       _details(),
     );

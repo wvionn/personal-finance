@@ -47,6 +47,8 @@ dependencies:
   flutter_timezone: ^3.0.1
   shared_preferences: ^2.3.3
   url_launcher: ^6.3.2
+  file_picker: ^8.1.2
+  package_info_plus: ^8.1.2
 
 dev_dependencies:
   flutter_test:

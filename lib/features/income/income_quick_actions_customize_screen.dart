@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/providers/core_providers.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/localized_labels.dart';
 import '../../domain/entities/quick_action.dart';
 import '../../l10n/app_localizations.dart';
 import 'income_providers.dart';
@@ -23,13 +24,13 @@ class IncomeQuickActionsCustomizeScreen extends ConsumerWidget {
     final async = ref.watch(incomeQuickActionsCustomizeProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.customizeQuick),
-      ),
+      appBar: AppBar(title: Text(l10n.customizeQuick)),
       body: async.when(
         data: (items) {
           if (items.isEmpty) {
-            return Center(child: Text(l10n.noChartData)); // Reusing noChartData for empty state
+            return Center(
+              child: Text(l10n.noChartData),
+            ); // Reusing noChartData for empty state
           }
           return ReorderableListView.builder(
             padding: const EdgeInsets.all(16),
@@ -55,7 +56,7 @@ class IncomeQuickActionsCustomizeScreen extends ConsumerWidget {
                   leading: Text(q.emoji, style: const TextStyle(fontSize: 22)),
                   title: Text(q.label),
                   subtitle: Text(
-                    '${q.source ?? ''} · ${formatMoney(q.amount, languageCode: lang)}',
+                    '${incomeSourceLabel(q.source ?? '', lang)} · ${formatMoney(q.amount, languageCode: lang)}',
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -126,8 +127,9 @@ class IncomeQuickActionsCustomizeScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final labelCtrl = TextEditingController(text: existing?.label ?? '');
     final emojiCtrl = TextEditingController(text: existing?.emoji ?? '✨');
-    final amountCtrl =
-        TextEditingController(text: existing?.amount.toString() ?? '10000');
+    final amountCtrl = TextEditingController(
+      text: existing?.amount.toString() ?? '10000',
+    );
     var source = existing?.source ?? kIncomeSources.first;
     if (!kIncomeSources.contains(source)) {
       source = kIncomeSources.last;
@@ -172,46 +174,48 @@ class IncomeQuickActionsCustomizeScreen extends ConsumerWidget {
                     const SizedBox(height: 10),
                     TextField(
                       controller: amountCtrl,
-                      decoration:
-                          InputDecoration(labelText: l10n.amountField),
+                      decoration: InputDecoration(labelText: l10n.amountField),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
                     ),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
-                      value: source,
+                      initialValue: source,
                       items: kIncomeSources
                           .map(
-                            (s) => DropdownMenuItem(value: s, child: Text(s)),
+                            (s) => DropdownMenuItem(
+                              value: s,
+                              child: Text(
+                                incomeSourceLabel(
+                                  s,
+                                  Localizations.localeOf(context).languageCode,
+                                ),
+                              ),
+                            ),
                           )
                           .toList(),
                       onChanged: (v) => setSt(() => source = v ?? source),
-                      decoration:
-                          InputDecoration(labelText: l10n.categoryField), // Assuming l10n.sourceField doesn't exist yet so using categoryField
+                      decoration: InputDecoration(labelText: l10n.sourceLabel),
                     ),
                     const SizedBox(height: 18),
                     FilledButton(
                       onPressed: () async {
                         final amt = double.tryParse(amountCtrl.text.trim());
-                        if (amt == null ||
-                            amt <= 0 ||
-                            labelCtrl.text.isEmpty) {
+                        if (amt == null || amt <= 0 || labelCtrl.text.isEmpty) {
                           return;
                         }
                         final repo = ref.read(financeRepositoryProvider);
-                        final all =
-                            await repo.getQuickActions(orderByUsage: false);
+                        final all = await repo.getQuickActions(
+                          orderByUsage: false,
+                        );
                         final incomes = all
                             .where((a) => a.type == QuickActionType.income)
                             .toList();
                         final maxSo = incomes.isEmpty
                             ? -1
-                            : incomes
-                                .map((e) => e.sortOrder)
-                                .reduce(math.max);
-                        final nextOrder =
-                            existing?.sortOrder ?? maxSo + 1;
+                            : incomes.map((e) => e.sortOrder).reduce(math.max);
+                        final nextOrder = existing?.sortOrder ?? maxSo + 1;
                         final qa = QuickAction(
                           id: existing?.id ?? _uuid.v4(),
                           type: QuickActionType.income,

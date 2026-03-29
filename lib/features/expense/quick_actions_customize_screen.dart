@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/providers/core_providers.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/localized_labels.dart';
 import '../../domain/entities/quick_action.dart';
 import '../../l10n/app_localizations.dart';
 import 'expense_providers.dart';
@@ -23,9 +24,7 @@ class QuickActionsCustomizeScreen extends ConsumerWidget {
     final async = ref.watch(quickActionsCustomizeProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.customizeQuick),
-      ),
+      appBar: AppBar(title: Text(l10n.customizeQuick)),
       body: async.when(
         data: (items) {
           if (items.isEmpty) {
@@ -55,7 +54,7 @@ class QuickActionsCustomizeScreen extends ConsumerWidget {
                   leading: Text(q.emoji, style: const TextStyle(fontSize: 22)),
                   title: Text(q.label),
                   subtitle: Text(
-                    '${q.category ?? ''} · ${formatMoney(q.amount, languageCode: lang)}',
+                    '${expenseCategoryLabel(q.category ?? '', lang)} · ${formatMoney(q.amount, languageCode: lang)}',
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -126,8 +125,9 @@ class QuickActionsCustomizeScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final labelCtrl = TextEditingController(text: existing?.label ?? '');
     final emojiCtrl = TextEditingController(text: existing?.emoji ?? '✨');
-    final amountCtrl =
-        TextEditingController(text: existing?.amount.toString() ?? '10000');
+    final amountCtrl = TextEditingController(
+      text: existing?.amount.toString() ?? '10000',
+    );
     var category = existing?.category ?? kExpenseCategories.first;
     if (!kExpenseCategories.contains(category)) {
       category = kExpenseCategories.last;
@@ -172,8 +172,7 @@ class QuickActionsCustomizeScreen extends ConsumerWidget {
                     const SizedBox(height: 10),
                     TextField(
                       controller: amountCtrl,
-                      decoration:
-                          InputDecoration(labelText: l10n.amountField),
+                      decoration: InputDecoration(labelText: l10n.amountField),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
@@ -184,35 +183,40 @@ class QuickActionsCustomizeScreen extends ConsumerWidget {
                       value: category,
                       items: kExpenseCategories
                           .map(
-                            (c) => DropdownMenuItem(value: c, child: Text(c)),
+                            (c) => DropdownMenuItem(
+                              value: c,
+                              child: Text(
+                                expenseCategoryLabel(
+                                  c,
+                                  Localizations.localeOf(context).languageCode,
+                                ),
+                              ),
+                            ),
                           )
                           .toList(),
                       onChanged: (v) => setSt(() => category = v ?? category),
-                      decoration:
-                          InputDecoration(labelText: l10n.categoryField),
+                      decoration: InputDecoration(
+                        labelText: l10n.categoryField,
+                      ),
                     ),
                     const SizedBox(height: 18),
                     FilledButton(
                       onPressed: () async {
                         final amt = double.tryParse(amountCtrl.text.trim());
-                        if (amt == null ||
-                            amt <= 0 ||
-                            labelCtrl.text.isEmpty) {
+                        if (amt == null || amt <= 0 || labelCtrl.text.isEmpty) {
                           return;
                         }
                         final repo = ref.read(financeRepositoryProvider);
-                        final all =
-                            await repo.getQuickActions(orderByUsage: false);
+                        final all = await repo.getQuickActions(
+                          orderByUsage: false,
+                        );
                         final expenses = all
                             .where((a) => a.type == QuickActionType.expense)
                             .toList();
                         final maxSo = expenses.isEmpty
                             ? -1
-                            : expenses
-                                .map((e) => e.sortOrder)
-                                .reduce(math.max);
-                        final nextOrder =
-                            existing?.sortOrder ?? maxSo + 1;
+                            : expenses.map((e) => e.sortOrder).reduce(math.max);
+                        final nextOrder = existing?.sortOrder ?? maxSo + 1;
                         final qa = QuickAction(
                           id: existing?.id ?? _uuid.v4(),
                           type: QuickActionType.expense,

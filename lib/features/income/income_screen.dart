@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/core_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/localized_labels.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/section_card.dart';
 import '../../domain/entities/income.dart';
@@ -82,22 +83,22 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
     return true;
   }
 
-  String _dateFilterLabel(String lang) {
+  String _dateFilterLabel(AppLocalizations l10n, String lang) {
     if (_singleDate != null) {
       final date = formatShortDate(_singleDate!, languageCode: lang);
-      return lang == 'id' ? 'Tanggal: $date' : 'Date: $date';
+      return l10n.dateFilterDateLabel(date);
     }
     if (_dateRange != null) {
       final start = formatShortDate(_dateRange!.start, languageCode: lang);
       final end = formatShortDate(_dateRange!.end, languageCode: lang);
-      return lang == 'id' ? 'Rentang: $start - $end' : 'Range: $start - $end';
+      return l10n.dateFilterRangeLabel(start, end);
     }
     return '';
   }
 
   Future<void> _openDateFilter() async {
     if (_isSelecting) return;
-    final lang = Localizations.localeOf(context).languageCode;
+    final l10n = AppLocalizations.of(context)!;
     final action = await showModalBottomSheet<String>(
       context: context,
       useSafeArea: true,
@@ -108,23 +109,17 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.event_outlined),
-              title: Text(
-                lang == 'id' ? 'Pilih satu tanggal' : 'Pick one date',
-              ),
+              title: Text(l10n.pickOneDate),
               onTap: () => Navigator.pop(ctx, 'single'),
             ),
             ListTile(
               leading: const Icon(Icons.date_range_outlined),
-              title: Text(
-                lang == 'id' ? 'Pilih rentang tanggal' : 'Pick date range',
-              ),
+              title: Text(l10n.pickDateRange),
               onTap: () => Navigator.pop(ctx, 'range'),
             ),
             ListTile(
               leading: const Icon(Icons.filter_alt_off_outlined),
-              title: Text(
-                lang == 'id' ? 'Reset filter tanggal' : 'Clear date filter',
-              ),
+              title: Text(l10n.clearDateFilter),
               onTap: () => Navigator.pop(ctx, 'clear'),
             ),
           ],
@@ -182,11 +177,8 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
   Future<void> _deleteSelectedIncomes() async {
     if (_selectedIncomeIds.isEmpty) return;
     final l10n = AppLocalizations.of(context)!;
-    final lang = Localizations.localeOf(context).languageCode;
     final count = _selectedIncomeIds.length;
-    final content = lang == 'id'
-        ? 'Hapus $count pemasukan terpilih?'
-        : 'Delete $count selected incomes?';
+    final content = l10n.deleteSelectedIncomesConfirm(count);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -216,11 +208,17 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
     ref.invalidate(dashboardSummaryProvider);
     ref.invalidate(dailyInsightProvider);
     if (!mounted) return;
-    final msg = lang == 'id'
-        ? '$count pemasukan dihapus'
-        : '$count incomes deleted';
+    final msg = l10n.deleteSelectedIncomesDone(count);
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  Future<void> _refreshIncomePage() async {
+    _clearSelection();
+    ref.invalidate(incomeListProvider);
+    ref.invalidate(dashboardSummaryProvider);
+    ref.invalidate(savingsGoalProvider);
+    ref.invalidate(dailyInsightProvider);
   }
 
   @override
@@ -229,10 +227,8 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
     final lang = Localizations.localeOf(context).languageCode;
     final listAsync = ref.watch(incomeListProvider);
     final query = ref.watch(incomeSearchProvider);
-    final selectedLabel = lang == 'id'
-        ? '${_selectedIncomeIds.length} dipilih'
-        : '${_selectedIncomeIds.length} selected';
-    final dateFilterLabel = _dateFilterLabel(lang);
+    final selectedLabel = l10n.selectedCount(_selectedIncomeIds.length);
+    final dateFilterLabel = _dateFilterLabel(l10n, lang);
 
     return Scaffold(
       appBar: AppBar(
@@ -253,7 +249,7 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
               ]
             : [
                 IconButton(
-                  tooltip: lang == 'id' ? 'Filter tanggal' : 'Filter by date',
+                  tooltip: l10n.dateFilter,
                   icon: Icon(
                     _hasDateFilter
                         ? Icons.filter_alt
@@ -294,7 +290,7 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
                       });
                       _clearSelection();
                     },
-                    child: Text(lang == 'id' ? 'Reset' : 'Clear'),
+                    child: Text(l10n.reset),
                   ),
                 ],
               ),
@@ -306,20 +302,28 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
                     .where((inc) => _matchesDateFilter(inc.date))
                     .toList();
                 if (filtered.isEmpty) {
-                  return EmptyState(
-                    icon: Icons.trending_up,
-                    title: _hasDateFilter
-                        ? (lang == 'id'
-                              ? 'Tidak ada pemasukan pada tanggal ini'
-                              : 'No incomes in this date filter')
-                        : query.isEmpty
-                        ? l10n.noIncomeYet
-                        : l10n.noIncomeMatches,
-                    subtitle: query.isEmpty ? l10n.tapToAddIncome : null,
+                  return RefreshIndicator(
+                    onRefresh: _refreshIncomePage,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        const SizedBox(height: 64),
+                        EmptyState(
+                          icon: Icons.trending_up,
+                          title: _hasDateFilter
+                              ? l10n.noIncomesInDateFilter
+                              : query.isEmpty
+                              ? l10n.noIncomeYet
+                              : l10n.noIncomeMatches,
+                          subtitle: query.isEmpty ? l10n.tapToAddIncome : null,
+                        ),
+                      ],
+                    ),
                   );
                 }
                 return RefreshIndicator(
-                  onRefresh: () async => ref.invalidate(incomeListProvider),
+                  onRefresh: _refreshIncomePage,
                   child: ListView.separated(
                     padding: const EdgeInsets.all(16),
                     itemCount: filtered.length,
@@ -332,7 +336,7 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
                           selected: selected,
-                          title: Text(inc.source),
+                          title: Text(incomeSourceLabel(inc.source, lang)),
                           subtitle: Text(
                             '${formatShortDate(inc.date, languageCode: lang)}'
                             '${inc.note != null ? ' · ${inc.note}' : ''}',

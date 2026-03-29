@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appTitle": "Catat Uang",
+  "appTitle": "Anti Boncos",
   "dashboard": "Dashboard",
   "income": "Income",
   "expense": "Expense",
@@ -73,7 +73,187 @@
   "tapToAddIncome": "Tap + to add income.",
   "searchIncome": "Search source or note",
   "wishlistEmptyTitle": "Wishlist is empty",
-  "wishlistEmptySubtitle": "Save things you plan to buy later."
+  "wishlistEmptySubtitle": "Save things you plan to buy later.",
+  "savingsWithdrawalNote": "Savings withdrawal",
+  "monthlySavingsTitle": "Monthly savings",
+  "quickIncomeTitle": "Quick income",
+  "greetingMorning": "Good morning,",
+  "greetingNoon": "Good afternoon,",
+  "greetingEvening": "Good evening,",
+  "greetingNight": "Good night,",
+  "dailyVibeLeadIn": "Today's money vibe:",
+  "currentlySaved": "Currently saved",
+  "mustBeNumber": "Must be a number",
+  "deposit": "Add",
+  "withdraw": "Withdraw",
+  "addSavingsTitle": "Add savings",
+  "withdrawSavingsTitle": "Withdraw savings",
+  "dateLabel": "Date",
+  "amountLabel": "Amount",
+  "noteOptionalLabel": "Note (optional)",
+  "sourceLabel": "Source",
+  "sourceDescribeLabel": "Describe source",
+  "sourceRequired": "Enter a source",
+  "categoryDescribeLabel": "Describe category",
+  "categoryRequired": "Enter a category",
+  "dateFilterDateLabel": "Date: {date}",
+  "@dateFilterDateLabel": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "dateFilterRangeLabel": "Range: {start} - {end}",
+  "@dateFilterRangeLabel": {
+    "placeholders": {
+      "start": {},
+      "end": {}
+    }
+  },
+  "pickOneDate": "Pick one date",
+  "pickDateRange": "Pick date range",
+  "clearDateFilter": "Clear date filter",
+  "dateFilter": "Filter by date",
+  "reset": "Clear",
+  "selectedCount": "{count} selected",
+  "@selectedCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "deleteSelectedExpensesConfirm": "Delete {count} selected expenses?",
+  "@deleteSelectedExpensesConfirm": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "deleteSelectedExpensesDone": "{count} expenses deleted",
+  "@deleteSelectedExpensesDone": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "noExpensesInDateFilter": "No expenses in this date filter",
+  "deleteSelectedIncomesConfirm": "Delete {count} selected incomes?",
+  "@deleteSelectedIncomesConfirm": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "deleteSelectedIncomesDone": "{count} incomes deleted",
+  "@deleteSelectedIncomesDone": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "noIncomesInDateFilter": "No incomes in this date filter",
+  "wishlistAddItem": "Add wishlist item",
+  "wishlistEditItem": "Edit item",
+  "nameLabel": "Name",
+  "nameRequired": "Enter a name",
+  "estimatedPrice": "Estimated price",
+  "alreadySavedOptional": "Already saved (optional)",
+  "validAmount": "Enter a valid amount",
+  "ecommerceLinkOptional": "E-commerce link (optional)",
+  "priority": "Priority",
+  "priorityLow": "Low",
+  "priorityMedium": "Med",
+  "priorityHigh": "High",
+  "deleteWishlistItemTitle": "Delete item?",
+  "deleteWishlistItemBody": "Remove \"{name}\" from the wishlist?",
+  "@deleteWishlistItemBody": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "markPurchasedTitle": "Mark as purchased",
+  "markPurchasedBody": "Also log this as an expense? You can set amount and category next.",
+  "markOnly": "No, just mark",
+  "addExpense": "Add expense",
+  "expenseDetails": "Expense details",
+  "confirm": "Confirm",
+  "fundsReady": "Funds are ready! ",
+  "overTenYears": ">10 years away ",
+  "achievableBy": "Achievable by {month} {year}",
+  "@achievableBy": {
+    "placeholders": {
+      "month": {},
+      "year": {}
+    }
+  },
+  "savedAmountLabel": "{amount} saved",
+  "@savedAmountLabel": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "buyLink": "Buy / Link",
+  "wishlistExpenseNotePrefix": "Wishlist",
+  "backupDialogTitle": "Save database backup",
+  "backupExportSuccess": "Database backup saved successfully.",
+  "backupExportFailed": "Failed to export database: {error}",
+  "@backupExportFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "autoBackupOffEnabled": "Auto backup is off.",
+  "autoBackupDailyEnabled": "Daily auto backup is on.",
+  "autoBackupWeeklyEnabled": "Weekly auto backup is on.",
+  "autoBackupSaveFailed": "Failed to save auto backup setting: {error}",
+  "@autoBackupSaveFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "autoBackupCreated": "Auto backup created: {path}",
+  "@autoBackupCreated": {
+    "placeholders": {
+      "path": {}
+    }
+  },
+  "autoBackupCreateFailed": "Failed to create auto backup: {error}",
+  "@autoBackupCreateFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "importDatabaseTitle": "Import database?",
+  "importDatabaseBody": "Current data will be replaced by backup data. Continue?",
+  "importSuccess": "Import successful. Data has been restored.",
+  "importFailed": "Failed to import database: {error}",
+  "@importFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "backupRestoreTitle": "Backup & Restore",
+  "backupRestoreSubtitle": "Export your database to move it to another device. Import to restore all data.",
+  "exportDatabase": "Export Database (.db)",
+  "importDatabase": "Import Database (.db)",
+  "autoBackup": "Auto backup",
+  "off": "Off",
+  "weekly": "Weekly",
+  "runAutoBackupNow": "Create Auto Backup Now",
+  "autoBackupHint": "Auto backup files are saved in the app internal folder (Documents/backups).",
+  "appVersion": "App version: {version}",
+  "@appVersion": {
+    "placeholders": {
+      "version": {}
+    }
+  },
+  "notificationTest": "Notification test",
+  "notificationTestSubtitle": "Tap the buttons below to preview notifications sent to your phone.",
+  "madeBy": "Anti Boncos · made by Vion 🐺",
+  "notifNoonLabel": "Noon (12:30)",
+  "notifNoonLateLabel": "Still noon (13:45)",
+  "notifNightLabel": "Night (20:00)",
+  "notifLateNightLabel": "Too late (21:30)",
+  "notifIdleLabel": "Idle (no transaction)",
+  "notifTitleNoon": "Anti Boncos · noon",
+  "notifTitleNoonLate": "Anti Boncos · still noon",
+  "notifTitleNight": "Anti Boncos · night",
+  "notifTitleLateNight": "Anti Boncos · too late",
+  "send": "Send"
 }
 
 

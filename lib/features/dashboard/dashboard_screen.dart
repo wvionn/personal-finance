@@ -91,7 +91,7 @@ class DashboardScreen extends ConsumerWidget {
         amount: amount,
         category: kQuickMiscCategory,
         date: DateTime.now(),
-        note: lang == 'id' ? 'Tarik tabungan' : 'Savings withdrawal',
+        note: l10n.savingsWithdrawalNote,
       ),
     );
     _invalidateFinance(ref);
@@ -99,12 +99,6 @@ class DashboardScreen extends ConsumerWidget {
       _flash(context, snackMessage ?? l10n.recorded);
     }
   }
-
-  static const _defaultSavingsGoal = SavingsGoal(
-    id: 'default',
-    title: 'Target tabungan',
-    targetAmount: 5000000,
-  );
 
   Widget _dashboardFlowCard(
     BuildContext context,
@@ -115,7 +109,13 @@ class DashboardScreen extends ConsumerWidget {
     String lang,
     List<QuickAction> quickIncomes,
   ) {
-    final g = goal ?? _defaultSavingsGoal;
+    final g =
+        goal ??
+        SavingsGoal(
+          id: 'default',
+          title: l10n.savingsGoal,
+          targetAmount: 5000000,
+        );
     final progress = g.targetAmount <= 0
         ? 0.0
         : (s.balance / g.targetAmount).clamp(0.0, 1.0);
@@ -159,20 +159,13 @@ class DashboardScreen extends ConsumerWidget {
         showDragHandle: true,
         builder: (ctx) => SavingsGoalEditorSheet(initial: g),
       ),
-      monthlySavingsTitle: lang == 'id'
-          ? 'Tabungan bulanan'
-          : 'Monthly savings',
-      quickIncomeTitle: lang == 'id' ? 'Pemasukan cepat' : 'Quick income',
-      onEditQuickIncome: () => Navigator.of(context)
-          .push(
-            MaterialPageRoute<void>(
-              builder: (context) => const IncomeQuickActionsCustomizeScreen(),
-            ),
-          )
-          .then((_) {
-            ref.invalidate(incomeQuickActionsProvider);
-            ref.invalidate(incomeQuickActionsCustomizeProvider);
-          }),
+      monthlySavingsTitle: l10n.monthlySavingsTitle,
+      quickIncomeTitle: l10n.quickIncomeTitle,
+      onEditQuickIncome: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (context) => const IncomeQuickActionsCustomizeScreen(),
+        ),
+      ),
       incomeQuickActions: incomeActions,
       onFireQuickIncome: (qa) async {
         await _quickIncome(
@@ -527,22 +520,17 @@ class _DailyVibeCard extends StatelessWidget {
   final DailySpendInsight insight;
   final String lang;
 
-  String _greetingForNow() {
+  String _greetingForNow(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final hour = DateTime.now().hour;
-    if (lang == 'id') {
-      if (hour < 11) return 'Selamat pagi,';
-      if (hour < 15) return 'Selamat siang,';
-      if (hour < 19) return 'Selamat sore,';
-      return 'Selamat malam,';
-    }
-    if (hour < 11) return 'Good morning,';
-    if (hour < 15) return 'Good afternoon,';
-    if (hour < 19) return 'Good evening,';
-    return 'Good night,';
+    if (hour < 11) return l10n.greetingMorning;
+    if (hour < 15) return l10n.greetingNoon;
+    if (hour < 19) return l10n.greetingEvening;
+    return l10n.greetingNight;
   }
 
-  String _statusLeadIn() {
-    return lang == 'id' ? 'Vibe keuangan hari ini:' : 'Today\'s money vibe:';
+  String _statusLeadIn(BuildContext context) {
+    return AppLocalizations.of(context)!.dailyVibeLeadIn;
   }
 
   @override
@@ -597,14 +585,14 @@ class _DailyVibeCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _greetingForNow(),
+                  _greetingForNow(context),
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${_statusLeadIn()} $title',
+                  '${_statusLeadIn(context)} $title',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: glow,

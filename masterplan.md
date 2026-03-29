@@ -46,3 +46,19 @@ Individuals who want to track their daily finances but find traditional form-bas
 ## Future Expansion Possibilities
 - Cloud syncing (optional opt-in for cross-device support).
 - AI financial insights and spending summaries derived from local data points.
+
+## Implementation Status (Updated March 29, 2026)
+- ✅ Core local database with SQLite and sqflite (already in place).
+- ✅ App title changed to "Anti Boncos" in UI and notifications.
+- ✅ Export database from Settings with user-sized selectable file path.
+- ✅ Import database from Settings with confirmation and data replace semantics.
+- ✅ Auto-backup engine with settings for Off/Daily/Weekly (persists in SharedPreferences).
+- ✅ Backup filename uses date format `backup_YYYY-MM-DD.db`.
+- ✅ App version display in Settings via package_info_plus.
+- ✅ Auto-run backup on app startup when schedule is due.
+
+### Remaining to implement
+- [ ] Cross-device cloud sync (opt-in, user account + encrypted server storage).
+- [ ] AI NLP parser widget as originally spec’d (Gemini/OpenAI, fallback strategy, strict JSON output).
+- [ ] Full widget ecosystem (home screen shortcut + background parse updates).
+- [ ] Optional biometric lock per security roadmap.

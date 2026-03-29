@@ -9,7 +9,7 @@ class AppLocalizationsId extends AppLocalizations {
   AppLocalizationsId([String locale = 'id']) : super(locale);
 
   @override
-  String get appTitle => 'Catat Uang';
+  String get appTitle => 'Anti Boncos';
 
   @override
   String get dashboard => 'Beranda';
@@ -231,4 +231,335 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get wishlistEmptySubtitle => 'Simpan barang yang ingin dibeli nanti.';
+
+  @override
+  String get savingsWithdrawalNote => 'Tarik tabungan';
+
+  @override
+  String get monthlySavingsTitle => 'Tabungan bulanan';
+
+  @override
+  String get quickIncomeTitle => 'Pemasukan cepat';
+
+  @override
+  String get greetingMorning => 'Selamat pagi,';
+
+  @override
+  String get greetingNoon => 'Selamat siang,';
+
+  @override
+  String get greetingEvening => 'Selamat sore,';
+
+  @override
+  String get greetingNight => 'Selamat malam,';
+
+  @override
+  String get dailyVibeLeadIn => 'Vibe keuangan hari ini:';
+
+  @override
+  String get currentlySaved => 'Terkumpul saat ini';
+
+  @override
+  String get mustBeNumber => 'Harus berupa angka';
+
+  @override
+  String get deposit => 'Setor';
+
+  @override
+  String get withdraw => 'Tarik';
+
+  @override
+  String get addSavingsTitle => 'Setor tabungan';
+
+  @override
+  String get withdrawSavingsTitle => 'Tarik tabungan';
+
+  @override
+  String get dateLabel => 'Tanggal';
+
+  @override
+  String get amountLabel => 'Nominal';
+
+  @override
+  String get noteOptionalLabel => 'Catatan (opsional)';
+
+  @override
+  String get sourceLabel => 'Sumber';
+
+  @override
+  String get sourceDescribeLabel => 'Jelaskan sumber';
+
+  @override
+  String get sourceRequired => 'Isi sumber pemasukan';
+
+  @override
+  String get categoryDescribeLabel => 'Jelaskan kategori';
+
+  @override
+  String get categoryRequired => 'Isi kategori';
+
+  @override
+  String dateFilterDateLabel(Object date) {
+    return 'Tanggal: $date';
+  }
+
+  @override
+  String dateFilterRangeLabel(Object start, Object end) {
+    return 'Rentang: $start - $end';
+  }
+
+  @override
+  String get pickOneDate => 'Pilih satu tanggal';
+
+  @override
+  String get pickDateRange => 'Pilih rentang tanggal';
+
+  @override
+  String get clearDateFilter => 'Reset filter tanggal';
+
+  @override
+  String get dateFilter => 'Filter tanggal';
+
+  @override
+  String get reset => 'Reset';
+
+  @override
+  String selectedCount(Object count) {
+    return '$count dipilih';
+  }
+
+  @override
+  String deleteSelectedExpensesConfirm(Object count) {
+    return 'Hapus $count pengeluaran terpilih?';
+  }
+
+  @override
+  String deleteSelectedExpensesDone(Object count) {
+    return '$count pengeluaran dihapus';
+  }
+
+  @override
+  String get noExpensesInDateFilter => 'Tidak ada pengeluaran pada tanggal ini';
+
+  @override
+  String deleteSelectedIncomesConfirm(Object count) {
+    return 'Hapus $count pemasukan terpilih?';
+  }
+
+  @override
+  String deleteSelectedIncomesDone(Object count) {
+    return '$count pemasukan dihapus';
+  }
+
+  @override
+  String get noIncomesInDateFilter => 'Tidak ada pemasukan pada tanggal ini';
+
+  @override
+  String get wishlistAddItem => 'Tambah item wishlist';
+
+  @override
+  String get wishlistEditItem => 'Ubah item';
+
+  @override
+  String get nameLabel => 'Nama';
+
+  @override
+  String get nameRequired => 'Isi nama';
+
+  @override
+  String get estimatedPrice => 'Perkiraan harga';
+
+  @override
+  String get alreadySavedOptional => 'Sudah terkumpul (opsional)';
+
+  @override
+  String get validAmount => 'Masukkan nominal yang valid';
+
+  @override
+  String get ecommerceLinkOptional => 'Link e-commerce (opsional)';
+
+  @override
+  String get priority => 'Prioritas';
+
+  @override
+  String get priorityLow => 'Rendah';
+
+  @override
+  String get priorityMedium => 'Sedang';
+
+  @override
+  String get priorityHigh => 'Tinggi';
+
+  @override
+  String get deleteWishlistItemTitle => 'Hapus item?';
+
+  @override
+  String deleteWishlistItemBody(Object name) {
+    return 'Hapus \"$name\" dari wishlist?';
+  }
+
+  @override
+  String get markPurchasedTitle => 'Tandai sudah dibeli';
+
+  @override
+  String get markPurchasedBody =>
+      'Apakah kamu ingin mencatat ini ke pengeluaran bulan ini?';
+
+  @override
+  String get markOnly => 'Tidak, tandai saja';
+
+  @override
+  String get addExpense => 'Catat pengeluaran';
+
+  @override
+  String get expenseDetails => 'Detail pengeluaran';
+
+  @override
+  String get confirm => 'Konfirmasi';
+
+  @override
+  String get fundsReady => 'Dana sudah terkumpul! ';
+
+  @override
+  String get overTenYears => '>10 tahun lagi ';
+
+  @override
+  String achievableBy(Object month, Object year) {
+    return 'Kebeli di $month $year';
+  }
+
+  @override
+  String savedAmountLabel(Object amount) {
+    return '$amount terkumpul';
+  }
+
+  @override
+  String get buyLink => 'Beli / Link';
+
+  @override
+  String get wishlistExpenseNotePrefix => 'Wishlist';
+
+  @override
+  String get backupDialogTitle => 'Simpan backup database';
+
+  @override
+  String get backupExportSuccess => 'Backup database berhasil disimpan.';
+
+  @override
+  String backupExportFailed(Object error) {
+    return 'Gagal export database: $error';
+  }
+
+  @override
+  String get autoBackupOffEnabled => 'Backup otomatis dimatikan.';
+
+  @override
+  String get autoBackupDailyEnabled => 'Backup otomatis harian aktif.';
+
+  @override
+  String get autoBackupWeeklyEnabled => 'Backup otomatis mingguan aktif.';
+
+  @override
+  String autoBackupSaveFailed(Object error) {
+    return 'Gagal simpan pengaturan backup otomatis: $error';
+  }
+
+  @override
+  String autoBackupCreated(Object path) {
+    return 'Backup otomatis dibuat: $path';
+  }
+
+  @override
+  String autoBackupCreateFailed(Object error) {
+    return 'Gagal membuat backup otomatis: $error';
+  }
+
+  @override
+  String get importDatabaseTitle => 'Import database?';
+
+  @override
+  String get importDatabaseBody =>
+      'Data sekarang akan diganti dengan isi file backup. Lanjut?';
+
+  @override
+  String get importSuccess => 'Import berhasil. Data sudah dipulihkan.';
+
+  @override
+  String importFailed(Object error) {
+    return 'Gagal import database: $error';
+  }
+
+  @override
+  String get backupRestoreTitle => 'Backup & Restore';
+
+  @override
+  String get backupRestoreSubtitle =>
+      'Export database agar bisa dipindah ke HP lain. Import untuk balikin semua data.';
+
+  @override
+  String get exportDatabase => 'Export Database (.db)';
+
+  @override
+  String get importDatabase => 'Import Database (.db)';
+
+  @override
+  String get autoBackup => 'Backup otomatis';
+
+  @override
+  String get off => 'Off';
+
+  @override
+  String get weekly => 'Mingguan';
+
+  @override
+  String get runAutoBackupNow => 'Buat Backup Otomatis Sekarang';
+
+  @override
+  String get autoBackupHint =>
+      'File backup otomatis disimpan ke folder internal aplikasi (Documents/backups).';
+
+  @override
+  String appVersion(Object version) {
+    return 'Versi aplikasi: $version';
+  }
+
+  @override
+  String get notificationTest => 'Test notifikasi';
+
+  @override
+  String get notificationTestSubtitle =>
+      'Tap tombol di bawah untuk preview notifikasi yang akan dikirim ke HP kamu.';
+
+  @override
+  String get madeBy => 'Anti Boncos · dibuat oleh Vion 🐺';
+
+  @override
+  String get notifNoonLabel => 'Siang (12:30)';
+
+  @override
+  String get notifNoonLateLabel => 'Masih siang (13:45)';
+
+  @override
+  String get notifNightLabel => 'Malam (20:00)';
+
+  @override
+  String get notifLateNightLabel => 'Bablas (21:30)';
+
+  @override
+  String get notifIdleLabel => 'Idle (tidak ada transaksi)';
+
+  @override
+  String get notifTitleNoon => 'Anti Boncos · siang';
+
+  @override
+  String get notifTitleNoonLate => 'Anti Boncos · masih siang';
+
+  @override
+  String get notifTitleNight => 'Anti Boncos · malam';
+
+  @override
+  String get notifTitleLateNight => 'Anti Boncos · bablas';
+
+  @override
+  String get send => 'Kirim';
 }

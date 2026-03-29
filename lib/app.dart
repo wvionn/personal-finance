@@ -16,7 +16,8 @@ class CatatUangApp extends ConsumerWidget {
       locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      title: 'Piyon finance tracking',
+      onGenerateTitle: (context) =>
+          AppLocalizations.of(context)?.appTitle ?? 'Anti Boncos',
       theme: AppTheme.light(),
       themeMode: ThemeMode.light,
       debugShowCheckedModeBanner: false,

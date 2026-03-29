@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/providers/core_providers.dart';
 import '../../domain/entities/wishlist_item.dart';
+import '../../l10n/app_localizations.dart';
 import '../dashboard/dashboard_providers.dart';
 import 'wishlist_providers.dart';
 
@@ -51,6 +52,7 @@ class _WishlistFormSheetState extends ConsumerState<WishlistFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: EdgeInsets.only(
         left: 24,
@@ -66,35 +68,37 @@ class _WishlistFormSheetState extends ConsumerState<WishlistFormSheet> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                widget.existing == null ? 'Add wishlist item' : 'Edit item',
+                widget.existing == null
+                    ? l10n.wishlistAddItem
+                    : l10n.wishlistEditItem,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _nameCtrl,
-                decoration: const InputDecoration(labelText: 'Name'),
+                decoration: InputDecoration(labelText: l10n.nameLabel),
                 textCapitalization: TextCapitalization.sentences,
                 validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Enter a name' : null,
+                    (v == null || v.trim().isEmpty) ? l10n.nameRequired : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _priceCtrl,
-                decoration: const InputDecoration(labelText: 'Estimated price'),
+                decoration: InputDecoration(labelText: l10n.estimatedPrice),
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
                 validator: (v) {
                   final n = double.tryParse(v ?? '');
-                  if (n == null || n <= 0) return 'Enter a positive amount';
+                  if (n == null || n <= 0) return l10n.validatorAmountPositive;
                   return null;
                 },
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _savedCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Already saved (optional)',
+                decoration: InputDecoration(
+                  labelText: l10n.alreadySavedOptional,
                 ),
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -102,7 +106,7 @@ class _WishlistFormSheetState extends ConsumerState<WishlistFormSheet> {
                 validator: (v) {
                   if (v != null && v.trim().isNotEmpty) {
                     final n = double.tryParse(v);
-                    if (n == null || n < 0) return 'Enter a valid amount';
+                    if (n == null || n < 0) return l10n.validAmount;
                   }
                   return null;
                 },
@@ -110,28 +114,31 @@ class _WishlistFormSheetState extends ConsumerState<WishlistFormSheet> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _urlCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'E-commerce Link (optional)',
+                decoration: InputDecoration(
+                  labelText: l10n.ecommerceLinkOptional,
                   hintText: 'https://shopee.co.id/...',
                 ),
                 keyboardType: TextInputType.url,
               ),
               const SizedBox(height: 12),
-              Text('Priority', style: Theme.of(context).textTheme.labelLarge),
+              Text(
+                l10n.priority,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
               const SizedBox(height: 8),
               SegmentedButton<WishlistPriority>(
-                segments: const [
+                segments: [
                   ButtonSegment(
                     value: WishlistPriority.low,
-                    label: Text('Low'),
+                    label: Text(l10n.priorityLow),
                   ),
                   ButtonSegment(
                     value: WishlistPriority.medium,
-                    label: Text('Med'),
+                    label: Text(l10n.priorityMedium),
                   ),
                   ButtonSegment(
                     value: WishlistPriority.high,
-                    label: Text('High'),
+                    label: Text(l10n.priorityHigh),
                   ),
                 ],
                 selected: {_priority},
@@ -164,7 +171,7 @@ class _WishlistFormSheetState extends ConsumerState<WishlistFormSheet> {
                   ref.invalidate(dashboardSummaryProvider);
                   if (context.mounted) Navigator.pop(context);
                 },
-                child: const Text('Save'),
+                child: Text(l10n.save),
               ),
             ],
           ),

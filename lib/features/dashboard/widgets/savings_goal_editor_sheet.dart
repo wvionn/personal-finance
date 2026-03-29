@@ -16,12 +16,15 @@ class SavingsGoalEditorSheet extends ConsumerStatefulWidget {
       _SavingsGoalEditorSheetState();
 }
 
-class _SavingsGoalEditorSheetState extends ConsumerState<SavingsGoalEditorSheet> {
+class _SavingsGoalEditorSheetState
+    extends ConsumerState<SavingsGoalEditorSheet> {
   late final _titleCtrl = TextEditingController(text: widget.initial.title);
-  late final _targetCtrl =
-      TextEditingController(text: widget.initial.targetAmount.toString());
-  late final _savedCtrl =
-      TextEditingController(text: widget.initial.savedAmount.toString());
+  late final _targetCtrl = TextEditingController(
+    text: widget.initial.targetAmount.toString(),
+  );
+  late final _savedCtrl = TextEditingController(
+    text: widget.initial.savedAmount.toString(),
+  );
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -33,11 +36,9 @@ class _SavingsGoalEditorSheetState extends ConsumerState<SavingsGoalEditorSheet>
   }
 
   Future<void> _adjustSaved(BuildContext context, bool isAdd) async {
-    final lang = Localizations.localeOf(context).languageCode;
-    final title = isAdd 
-      ? (lang == 'id' ? 'Setor Tabungan' : 'Add Savings')
-      : (lang == 'id' ? 'Tarik Tabungan' : 'Withdraw Savings');
-    
+    final l10n = AppLocalizations.of(context)!;
+    final title = isAdd ? l10n.addSavingsTitle : l10n.withdrawSavingsTitle;
+
     final ctrl = TextEditingController();
     final amt = await showDialog<double>(
       context: context,
@@ -47,22 +48,19 @@ class _SavingsGoalEditorSheetState extends ConsumerState<SavingsGoalEditorSheet>
           controller: ctrl,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           autofocus: true,
-          decoration: InputDecoration(
-            hintText: '0',
-            prefixText: 'Rp ',
-          ),
+          decoration: InputDecoration(hintText: '0', prefixText: 'Rp '),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(lang == 'id' ? 'Batal' : 'Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
               final val = double.tryParse(ctrl.text.trim());
               Navigator.pop(ctx, val);
             },
-            child: Text(lang == 'id' ? 'Simpan' : 'Save'),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -82,8 +80,7 @@ class _SavingsGoalEditorSheetState extends ConsumerState<SavingsGoalEditorSheet>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final lang = Localizations.localeOf(context).languageCode;
-    
+
     return Padding(
       padding: EdgeInsets.only(
         left: 24,
@@ -97,17 +94,19 @@ class _SavingsGoalEditorSheetState extends ConsumerState<SavingsGoalEditorSheet>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(l10n.savingsGoal,
-                style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              l10n.savingsGoal,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _savedCtrl,
-              decoration: InputDecoration(
-                labelText: lang == 'id' ? 'Terkumpul saat ini' : 'Currently saved',
+              decoration: InputDecoration(labelText: l10n.currentlySaved),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               validator: (v) {
-                if (double.tryParse(v ?? '') == null) return 'Must be a number';
+                if (double.tryParse(v ?? '') == null) return l10n.mustBeNumber;
                 return null;
               },
             ),
@@ -118,7 +117,7 @@ class _SavingsGoalEditorSheetState extends ConsumerState<SavingsGoalEditorSheet>
                   child: OutlinedButton.icon(
                     onPressed: () => _adjustSaved(context, true),
                     icon: const Icon(Icons.add_circle_outline),
-                    label: Text(lang == 'id' ? 'Setor' : 'Add'),
+                    label: Text(l10n.deposit),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -126,7 +125,7 @@ class _SavingsGoalEditorSheetState extends ConsumerState<SavingsGoalEditorSheet>
                   child: OutlinedButton.icon(
                     onPressed: () => _adjustSaved(context, false),
                     icon: const Icon(Icons.remove_circle_outline),
-                    label: Text(lang == 'id' ? 'Tarik' : 'Withdraw'),
+                    label: Text(l10n.withdraw),
                   ),
                 ),
               ],
@@ -138,15 +137,17 @@ class _SavingsGoalEditorSheetState extends ConsumerState<SavingsGoalEditorSheet>
               controller: _titleCtrl,
               decoration: InputDecoration(labelText: l10n.goalName),
               textCapitalization: TextCapitalization.sentences,
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? l10n.validatorTitleRequired : null,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? l10n.validatorTitleRequired
+                  : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _targetCtrl,
               decoration: InputDecoration(labelText: l10n.amountField),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               validator: (v) {
                 final n = double.tryParse(v ?? '');
                 if (n == null || n <= 0) return l10n.validatorAmountPositive;
@@ -177,4 +178,3 @@ class _SavingsGoalEditorSheetState extends ConsumerState<SavingsGoalEditorSheet>
     );
   }
 }
-

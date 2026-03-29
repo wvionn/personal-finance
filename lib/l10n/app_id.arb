@@ -1,6 +1,6 @@
 {
   "@@locale": "id",
-  "appTitle": "Catat Uang",
+  "appTitle": "Anti Boncos",
   "dashboard": "Beranda",
   "income": "Pemasukan",
   "expense": "Pengeluaran",
@@ -73,7 +73,187 @@
   "tapToAddIncome": "Ketuk + untuk menambah pemasukan.",
   "searchIncome": "Cari sumber atau catatan",
   "wishlistEmptyTitle": "Wishlist kosong",
-  "wishlistEmptySubtitle": "Simpan barang yang ingin dibeli nanti."
+  "wishlistEmptySubtitle": "Simpan barang yang ingin dibeli nanti.",
+  "savingsWithdrawalNote": "Tarik tabungan",
+  "monthlySavingsTitle": "Tabungan bulanan",
+  "quickIncomeTitle": "Pemasukan cepat",
+  "greetingMorning": "Selamat pagi,",
+  "greetingNoon": "Selamat siang,",
+  "greetingEvening": "Selamat sore,",
+  "greetingNight": "Selamat malam,",
+  "dailyVibeLeadIn": "Vibe keuangan hari ini:",
+  "currentlySaved": "Terkumpul saat ini",
+  "mustBeNumber": "Harus berupa angka",
+  "deposit": "Setor",
+  "withdraw": "Tarik",
+  "addSavingsTitle": "Setor tabungan",
+  "withdrawSavingsTitle": "Tarik tabungan",
+  "dateLabel": "Tanggal",
+  "amountLabel": "Nominal",
+  "noteOptionalLabel": "Catatan (opsional)",
+  "sourceLabel": "Sumber",
+  "sourceDescribeLabel": "Jelaskan sumber",
+  "sourceRequired": "Isi sumber pemasukan",
+  "categoryDescribeLabel": "Jelaskan kategori",
+  "categoryRequired": "Isi kategori",
+  "dateFilterDateLabel": "Tanggal: {date}",
+  "@dateFilterDateLabel": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "dateFilterRangeLabel": "Rentang: {start} - {end}",
+  "@dateFilterRangeLabel": {
+    "placeholders": {
+      "start": {},
+      "end": {}
+    }
+  },
+  "pickOneDate": "Pilih satu tanggal",
+  "pickDateRange": "Pilih rentang tanggal",
+  "clearDateFilter": "Reset filter tanggal",
+  "dateFilter": "Filter tanggal",
+  "reset": "Reset",
+  "selectedCount": "{count} dipilih",
+  "@selectedCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "deleteSelectedExpensesConfirm": "Hapus {count} pengeluaran terpilih?",
+  "@deleteSelectedExpensesConfirm": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "deleteSelectedExpensesDone": "{count} pengeluaran dihapus",
+  "@deleteSelectedExpensesDone": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "noExpensesInDateFilter": "Tidak ada pengeluaran pada tanggal ini",
+  "deleteSelectedIncomesConfirm": "Hapus {count} pemasukan terpilih?",
+  "@deleteSelectedIncomesConfirm": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "deleteSelectedIncomesDone": "{count} pemasukan dihapus",
+  "@deleteSelectedIncomesDone": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "noIncomesInDateFilter": "Tidak ada pemasukan pada tanggal ini",
+  "wishlistAddItem": "Tambah item wishlist",
+  "wishlistEditItem": "Ubah item",
+  "nameLabel": "Nama",
+  "nameRequired": "Isi nama",
+  "estimatedPrice": "Perkiraan harga",
+  "alreadySavedOptional": "Sudah terkumpul (opsional)",
+  "validAmount": "Masukkan nominal yang valid",
+  "ecommerceLinkOptional": "Link e-commerce (opsional)",
+  "priority": "Prioritas",
+  "priorityLow": "Rendah",
+  "priorityMedium": "Sedang",
+  "priorityHigh": "Tinggi",
+  "deleteWishlistItemTitle": "Hapus item?",
+  "deleteWishlistItemBody": "Hapus \"{name}\" dari wishlist?",
+  "@deleteWishlistItemBody": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "markPurchasedTitle": "Tandai sudah dibeli",
+  "markPurchasedBody": "Apakah kamu ingin mencatat ini ke pengeluaran bulan ini?",
+  "markOnly": "Tidak, tandai saja",
+  "addExpense": "Catat pengeluaran",
+  "expenseDetails": "Detail pengeluaran",
+  "confirm": "Konfirmasi",
+  "fundsReady": "Dana sudah terkumpul! ",
+  "overTenYears": ">10 tahun lagi ",
+  "achievableBy": "Kebeli di {month} {year}",
+  "@achievableBy": {
+    "placeholders": {
+      "month": {},
+      "year": {}
+    }
+  },
+  "savedAmountLabel": "{amount} terkumpul",
+  "@savedAmountLabel": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "buyLink": "Beli / Link",
+  "wishlistExpenseNotePrefix": "Wishlist",
+  "backupDialogTitle": "Simpan backup database",
+  "backupExportSuccess": "Backup database berhasil disimpan.",
+  "backupExportFailed": "Gagal export database: {error}",
+  "@backupExportFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "autoBackupOffEnabled": "Backup otomatis dimatikan.",
+  "autoBackupDailyEnabled": "Backup otomatis harian aktif.",
+  "autoBackupWeeklyEnabled": "Backup otomatis mingguan aktif.",
+  "autoBackupSaveFailed": "Gagal simpan pengaturan backup otomatis: {error}",
+  "@autoBackupSaveFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "autoBackupCreated": "Backup otomatis dibuat: {path}",
+  "@autoBackupCreated": {
+    "placeholders": {
+      "path": {}
+    }
+  },
+  "autoBackupCreateFailed": "Gagal membuat backup otomatis: {error}",
+  "@autoBackupCreateFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "importDatabaseTitle": "Import database?",
+  "importDatabaseBody": "Data sekarang akan diganti dengan isi file backup. Lanjut?",
+  "importSuccess": "Import berhasil. Data sudah dipulihkan.",
+  "importFailed": "Gagal import database: {error}",
+  "@importFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "backupRestoreTitle": "Backup & Restore",
+  "backupRestoreSubtitle": "Export database agar bisa dipindah ke HP lain. Import untuk balikin semua data.",
+  "exportDatabase": "Export Database (.db)",
+  "importDatabase": "Import Database (.db)",
+  "autoBackup": "Backup otomatis",
+  "off": "Off",
+  "weekly": "Mingguan",
+  "runAutoBackupNow": "Buat Backup Otomatis Sekarang",
+  "autoBackupHint": "File backup otomatis disimpan ke folder internal aplikasi (Documents/backups).",
+  "appVersion": "Versi aplikasi: {version}",
+  "@appVersion": {
+    "placeholders": {
+      "version": {}
+    }
+  },
+  "notificationTest": "Test notifikasi",
+  "notificationTestSubtitle": "Tap tombol di bawah untuk preview notifikasi yang akan dikirim ke HP kamu.",
+  "madeBy": "Anti Boncos · dibuat oleh Vion 🐺",
+  "notifNoonLabel": "Siang (12:30)",
+  "notifNoonLateLabel": "Masih siang (13:45)",
+  "notifNightLabel": "Malam (20:00)",
+  "notifLateNightLabel": "Bablas (21:30)",
+  "notifIdleLabel": "Idle (tidak ada transaksi)",
+  "notifTitleNoon": "Anti Boncos · siang",
+  "notifTitleNoonLate": "Anti Boncos · masih siang",
+  "notifTitleNight": "Anti Boncos · malam",
+  "notifTitleLateNight": "Anti Boncos · bablas",
+  "send": "Kirim"
 }
 
 

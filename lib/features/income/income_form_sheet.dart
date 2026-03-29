@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/providers/core_providers.dart';
+import '../../core/utils/localized_labels.dart';
 import '../../domain/entities/income.dart';
 import '../../l10n/app_localizations.dart';
 import '../dashboard/dashboard_providers.dart';
@@ -63,6 +64,7 @@ class _IncomeFormSheetState extends ConsumerState<IncomeFormSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final lang = Localizations.localeOf(context).languageCode;
     return Padding(
       padding: EdgeInsets.only(
         left: 24,
@@ -84,12 +86,13 @@ class _IncomeFormSheetState extends ConsumerState<IncomeFormSheet> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _amountCtrl,
-                decoration: const InputDecoration(labelText: 'Amount'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: l10n.amountLabel),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 validator: (v) {
                   final n = double.tryParse(v ?? '');
-                  if (n == null || n <= 0) return 'Enter a positive amount';
+                  if (n == null || n <= 0) return l10n.validatorAmountPositive;
                   return null;
                 },
               ),
@@ -98,23 +101,28 @@ class _IncomeFormSheetState extends ConsumerState<IncomeFormSheet> {
                 // ignore: deprecated_member_use
                 value: _presetSource,
                 items: kIncomeSources
-                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                    .map(
+                      (s) => DropdownMenuItem(
+                        value: s,
+                        child: Text(incomeSourceLabel(s, lang)),
+                      ),
+                    )
                     .toList(),
                 onChanged: (v) => setState(() => _presetSource = v ?? 'Other'),
-                decoration: const InputDecoration(labelText: 'Source'),
+                decoration: InputDecoration(labelText: l10n.sourceLabel),
               ),
               if (_presetSource == 'Other') ...[
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _customSourceCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Describe source',
+                  decoration: InputDecoration(
+                    labelText: l10n.sourceDescribeLabel,
                   ),
                   textCapitalization: TextCapitalization.sentences,
                   validator: (v) {
                     if (_presetSource != 'Other') return null;
                     if (v == null || v.trim().isEmpty) {
-                      return 'Enter a source';
+                      return l10n.sourceRequired;
                     }
                     return null;
                   },
@@ -123,7 +131,7 @@ class _IncomeFormSheetState extends ConsumerState<IncomeFormSheet> {
               const SizedBox(height: 12),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Date'),
+                title: Text(l10n.dateLabel),
                 subtitle: Text(_date.toLocal().toString().split(' ').first),
                 trailing: IconButton(
                   icon: const Icon(Icons.date_range),
@@ -140,7 +148,7 @@ class _IncomeFormSheetState extends ConsumerState<IncomeFormSheet> {
               ),
               TextFormField(
                 controller: _noteCtrl,
-                decoration: const InputDecoration(labelText: 'Note (optional)'),
+                decoration: InputDecoration(labelText: l10n.noteOptionalLabel),
                 textCapitalization: TextCapitalization.sentences,
               ),
               const SizedBox(height: 20),
