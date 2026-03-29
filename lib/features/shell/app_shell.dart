@@ -17,7 +17,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
 
-  static const _pages = <Widget>[
+  final _pages = const <Widget>[
     DashboardScreen(),
     IncomeScreen(),
     ExpenseScreen(),

@@ -172,9 +172,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen(dashboardSummaryProvider, (previous, next) {
       next.whenData((_) {
-        Future.microtask(
-          () => IdleTransactionNudge.maybeAfterDashboardLoad(ref),
-        );
+        IdleTransactionNudge.maybeAfterDashboardLoad(ref);
       });
     });
 
