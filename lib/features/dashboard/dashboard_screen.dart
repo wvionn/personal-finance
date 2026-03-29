@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/providers/core_providers.dart';
@@ -15,10 +16,8 @@ import '../../domain/entities/expense.dart';
 import '../../domain/entities/income.dart';
 import '../../domain/entities/savings_goal.dart';
 import '../../domain/entities/summary_mode.dart';
-import '../../domain/entities/quick_action.dart';
 import '../../l10n/app_localizations.dart';
 import '../income/income_providers.dart';
-import '../income/income_quick_actions_customize_screen.dart';
 import '../settings/settings_screen.dart';
 import '../expense/expense_providers.dart';
 import 'dashboard_providers.dart';
@@ -39,30 +38,6 @@ class DashboardScreen extends ConsumerWidget {
     ref.invalidate(dailyInsightProvider);
     ref.invalidate(incomeListProvider);
     ref.invalidate(expenseListProvider);
-  }
-
-  Future<void> _fireQuickIncome(
-    WidgetRef ref,
-    BuildContext context,
-    QuickAction qa, {
-    String? snackMessage,
-  }) async {
-    final l10n = AppLocalizations.of(context)!;
-    final repo = ref.read(financeRepositoryProvider);
-    await repo.upsertIncome(
-      Income(
-        id: _uuid.v4(),
-        amount: qa.amount,
-        source: qa.source ?? l10n.incomeSourceQuick,
-        date: DateTime.now(),
-        note: '${qa.emoji} ${qa.label}',
-      ),
-    );
-    await repo.incrementQuickActionUse(qa.id);
-    _invalidateFinance(ref);
-    if (context.mounted) {
-      _flash(context, snackMessage ?? l10n.recorded);
-    }
   }
 
   Future<void> _quickIncome(
@@ -111,12 +86,11 @@ class DashboardScreen extends ConsumerWidget {
     SavingsGoal? goal,
     AppLocalizations l10n,
     String lang,
-    List<QuickAction> incomeActions,
   ) {
     final g = goal ?? _defaultSavingsGoal;
     final progress = g.targetAmount <= 0
         ? 0.0
-        : (g.savedAmount / g.targetAmount).clamp(0.0, 1.0);
+        : (s.balance / g.targetAmount).clamp(0.0, 1.0);
     return DashboardFlowCard(
       balanceLabel: l10n.balance,
       balanceFormatted: formatMoney(s.balance, languageCode: lang),
@@ -127,8 +101,6 @@ class DashboardScreen extends ConsumerWidget {
       goalTitle: '${l10n.savingsGoal} · ${g.title}',
       goalProgressLabel: '${(progress * 100).round()}%',
       progress: progress,
-      savedFormatted: formatMoney(g.savedAmount, languageCode: lang),
-      targetFormatted: formatMoney(g.targetAmount, languageCode: lang),
       onTapGoal: () => showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
@@ -137,49 +109,26 @@ class DashboardScreen extends ConsumerWidget {
         builder: (ctx) => SavingsGoalEditorSheet(initial: g),
       ),
       monthlySavingsTitle:
-          lang == 'id' ? 'Tabungan harian' : 'Daily savings',
+          lang == 'id' ? 'Tabungan bulanan' : 'Monthly savings',
       quickIncomeTitle: lang == 'id' ? 'Pemasukan cepat' : 'Quick income',
-      incomeQuickActions: incomeActions,
-      lang: lang,
-      onEditQuickIncome: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (context) => const IncomeQuickActionsCustomizeScreen(),
-        ),
-      ).then((_) {
-        ref.invalidate(incomeQuickActionsCustomizeProvider);
-        ref.invalidate(incomeQuickActionsProvider);
-      }),
-      onFireQuickIncome: (qa) => _fireQuickIncome(
+      incomeQuickLabel: l10n.quickAddIncome10,
+      incomeQuickLabel2: l10n.quickAddIncome20,
+      incomeQuickIcon: Icons.add_card_rounded,
+      incomeQuickIcon2: Icons.savings_rounded,
+      incomeQuickSubtitle2: formatMoney(20000, languageCode: lang),
+      onIncome10k: () => _quickIncome(
         ref,
         context,
-        qa,
+        10000,
         snackMessage: FlowQuips.afterIncome(lang),
       ),
-      onHardcodedExpense: () async {
-        final repo = ref.read(financeRepositoryProvider);
-        await repo.upsertExpense(Expense(
-          id: _uuid.v4(),
-          amount: 10000,
-          category: 'Lainnya',
-          date: DateTime.now(),
-          note: l10n.noteQuickDash,
-        ));
-        
-        final summary = ref.read(dashboardSummaryProvider).valueOrNull;
-        final isOverspending = summary != null && (summary.balance - 10000) < 0;
-
-        _invalidateFinance(ref);
-        if (context.mounted) {
-          _flash(
-            context,
-            FlowQuips.afterExpense(
-              lang,
-              category: 'Lainnya',
-              isOverspending: isOverspending,
-            ),
-          );
-        }
-      },
+      onIncome20k: () => _quickIncome(
+        ref,
+        context,
+        20000,
+        snackMessage: FlowQuips.afterIncome(lang),
+      ),
+      quickAmountSubtitle: formatMoney(10000, languageCode: lang),
     );
   }
 
@@ -187,7 +136,9 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen(dashboardSummaryProvider, (previous, next) {
       next.whenData((_) {
-        IdleTransactionNudge.maybeAfterDashboardLoad(ref);
+        Future.microtask(
+          () => IdleTransactionNudge.maybeAfterDashboardLoad(ref),
+        );
       });
     });
 
@@ -198,8 +149,6 @@ class DashboardScreen extends ConsumerWidget {
     final anchor = ref.watch(selectedDashboardAnchorProvider);
     final goalAsync = ref.watch(savingsGoalProvider);
     final insightAsync = ref.watch(dailyInsightProvider);
-    final incomeActionsAsync = ref.watch(incomeQuickActionsProvider);
-    final incomeActions = incomeActionsAsync.valueOrNull ?? [];
 
     return Scaffold(
       appBar: AppBar(
@@ -256,18 +205,20 @@ class DashboardScreen extends ConsumerWidget {
             summaryAsync.when(
               data: (s) => goalAsync.when(
                 data: (goal) =>
-                    _dashboardFlowCard(context, ref, s, goal, l10n, lang, incomeActions),
+                    _dashboardFlowCard(context, ref, s, goal, l10n, lang),
                 loading: () =>
-                    _dashboardFlowCard(context, ref, s, null, l10n, lang, incomeActions),
+                    _dashboardFlowCard(context, ref, s, null, l10n, lang),
                 error: (err, st) =>
-                    _dashboardFlowCard(context, ref, s, null, l10n, lang, incomeActions),
+                    _dashboardFlowCard(context, ref, s, null, l10n, lang),
               ),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Text('$e'),
             ),
             const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              spacing: 10,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 SegmentedButton<SummaryMode>(
                   showSelectedIcon: true,
@@ -392,7 +343,7 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    l10n.trend,
+                    '${l10n.trend} (${DateFormat.MMMM(lang == 'en' ? 'en_US' : 'id_ID').format(anchor)})',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -448,11 +399,11 @@ class DashboardScreen extends ConsumerWidget {
         const SizedBox(height: 8),
         Text(
           value,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w900,
-            color: tint,
-            letterSpacing: -0.5,
-          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -477,7 +428,7 @@ class _DailyVibeCard extends StatelessWidget {
     if (!insight.hasEnoughData) {
       title = l10n.dailyStatus;
       hint = l10n.statusNoData;
-      glow = AppTheme.neonAmber;
+      glow = AppTheme.mediumBrown;
     } else {
       switch (insight.vibe) {
         case SpendVibe.hemat:
@@ -502,21 +453,15 @@ class _DailyVibeCard extends StatelessWidget {
         color: AppTheme.panel,
         boxShadow: [
           BoxShadow(
-            color: glow.withValues(alpha: 0.2),
-            blurRadius: 20,
+            color: glow.withValues(alpha: 0.15),
+            blurRadius: 24,
             spreadRadius: 2,
             offset: const Offset(0, 4),
           ),
-          BoxShadow(
-            color: glow.withValues(alpha: 0.35),
-            blurRadius: 40,
-            spreadRadius: -4,
-            offset: const Offset(0, 0),
-          ),
         ],
         border: Border.all(
-          color: glow.withValues(alpha: 0.6),
-          width: 1.5,
+          color: glow.withValues(alpha: 0.4),
+          width: 1.0,
         ),
       ),
       child: Row(
@@ -537,12 +482,6 @@ class _DailyVibeCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: glow,
-                    shadows: [
-                      Shadow(
-                        color: glow.withValues(alpha: 0.6),
-                        blurRadius: 12,
-                      ),
-                    ],
                   ),
                 ),
                 const SizedBox(height: 4),

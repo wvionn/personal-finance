@@ -138,7 +138,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   String _dayLabel(DateTime d, String languageCode) {
     final loc = languageCode == 'en' ? 'en_US' : 'id_ID';
-    return DateFormat.MMMd(loc).format(d);
+    return DateFormat.d(loc).format(d);
   }
 
   Future<List<ChartPoint>> _monthlyDailyBuckets(
