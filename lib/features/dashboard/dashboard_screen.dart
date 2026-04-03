@@ -30,10 +30,34 @@ import 'widgets/monthly_report_sheet.dart';
 import 'widgets/savings_goal_editor_sheet.dart';
 import 'widgets/trend_bar_chart.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
+  @override
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  late final ProviderSubscription<AsyncValue<DashboardSummary>> _summarySub;
+
   static const _uuid = Uuid();
+
+  @override
+  void initState() {
+    super.initState();
+    _summarySub = ref.listenManual(dashboardSummaryProvider, (previous, next) {
+      next.whenData((_) {
+        final repo = ref.read(financeRepositoryProvider);
+        Future.microtask(() => IdleTransactionNudge.maybeAfterDashboardLoad(repo));
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _summarySub.close();
+    super.dispose();
+  }
 
   void _invalidateFinance(WidgetRef ref) {
     ref.invalidate(dashboardSummaryProvider);
@@ -194,14 +218,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen(dashboardSummaryProvider, (previous, next) {
-      next.whenData((_) {
-        Future.microtask(
-          () => IdleTransactionNudge.maybeAfterDashboardLoad(ref),
-        );
-      });
-    });
+  Widget build(BuildContext context) {
 
     final l10n = AppLocalizations.of(context)!;
     final lang = Localizations.localeOf(context).languageCode;

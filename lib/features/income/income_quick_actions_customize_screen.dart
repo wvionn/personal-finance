@@ -135,15 +135,14 @@ class IncomeQuickActionsCustomizeScreen extends ConsumerWidget {
       source = kIncomeSources.last;
     }
 
-    try {
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        showDragHandle: true,
-        builder: (ctx) {
-          return StatefulBuilder(
-            builder: (context, setSt) {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSt) {
               return Padding(
                 padding: EdgeInsets.only(
                   left: 20,
@@ -151,101 +150,98 @@ class IncomeQuickActionsCustomizeScreen extends ConsumerWidget {
                   bottom: MediaQuery.of(context).viewInsets.bottom + 24,
                   top: 8,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      existing == null
-                          ? l10n.addQuickTitle
-                          : l10n.editQuickTitle,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: emojiCtrl,
-                      decoration: InputDecoration(labelText: l10n.emojiField),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: labelCtrl,
-                      decoration: InputDecoration(labelText: l10n.labelField),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: amountCtrl,
-                      decoration: InputDecoration(labelText: l10n.amountField),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        existing == null
+                            ? l10n.addQuickTitle
+                            : l10n.editQuickTitle,
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    DropdownButtonFormField<String>(
-                      initialValue: source,
-                      items: kIncomeSources
-                          .map(
-                            (s) => DropdownMenuItem(
-                              value: s,
-                              child: Text(
-                                incomeSourceLabel(
-                                  s,
-                                  Localizations.localeOf(context).languageCode,
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: emojiCtrl,
+                        decoration: InputDecoration(labelText: l10n.emojiField),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: labelCtrl,
+                        decoration: InputDecoration(labelText: l10n.labelField),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: amountCtrl,
+                        decoration: InputDecoration(labelText: l10n.amountField),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      DropdownButtonFormField<String>(
+                        initialValue: source,
+                        items: kIncomeSources
+                            .map(
+                              (s) => DropdownMenuItem(
+                                value: s,
+                                child: Text(
+                                  incomeSourceLabel(
+                                    s,
+                                    Localizations.localeOf(context).languageCode,
+                                  ),
                                 ),
                               ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) => setSt(() => source = v ?? source),
-                      decoration: InputDecoration(labelText: l10n.sourceLabel),
-                    ),
-                    const SizedBox(height: 18),
-                    FilledButton(
-                      onPressed: () async {
-                        final amt = double.tryParse(amountCtrl.text.trim());
-                        if (amt == null || amt <= 0 || labelCtrl.text.isEmpty) {
-                          return;
-                        }
-                        final repo = ref.read(financeRepositoryProvider);
-                        final all = await repo.getQuickActions(
-                          orderByUsage: false,
-                        );
-                        final incomes = all
-                            .where((a) => a.type == QuickActionType.income)
-                            .toList();
-                        final maxSo = incomes.isEmpty
-                            ? -1
-                            : incomes.map((e) => e.sortOrder).reduce(math.max);
-                        final nextOrder = existing?.sortOrder ?? maxSo + 1;
-                        final qa = QuickAction(
-                          id: existing?.id ?? _uuid.v4(),
-                          type: QuickActionType.income,
-                          label: labelCtrl.text.trim(),
-                          emoji: emojiCtrl.text.trim().isEmpty
-                              ? '✨'
-                              : emojiCtrl.text.trim(),
-                          amount: amt,
-                          source: source,
-                          useCount: existing?.useCount ?? 0,
-                          sortOrder: nextOrder,
-                        );
-                        await repo.upsertQuickAction(qa);
-                        ref.invalidate(incomeQuickActionsCustomizeProvider);
-                        ref.invalidate(incomeQuickActionsProvider);
-                        if (ctx.mounted) Navigator.pop(ctx);
-                      },
-                      child: Text(l10n.save),
-                    ),
-                  ],
+                            )
+                            .toList(),
+                        onChanged: (v) => setSt(() => source = v ?? source),
+                        decoration: InputDecoration(labelText: l10n.sourceLabel),
+                      ),
+                      const SizedBox(height: 18),
+                      FilledButton(
+                        onPressed: () async {
+                          final amt = double.tryParse(amountCtrl.text.trim());
+                          if (amt == null || amt <= 0 || labelCtrl.text.isEmpty) {
+                            return;
+                          }
+                          final repo = ref.read(financeRepositoryProvider);
+                          final all = await repo.getQuickActions(
+                            orderByUsage: false,
+                          );
+                          final incomes = all
+                              .where((a) => a.type == QuickActionType.income)
+                              .toList();
+                          final maxSo = incomes.isEmpty
+                              ? -1
+                              : incomes.map((e) => e.sortOrder).reduce(math.max);
+                          final nextOrder = existing?.sortOrder ?? maxSo + 1;
+                          final qa = QuickAction(
+                            id: existing?.id ?? _uuid.v4(),
+                            type: QuickActionType.income,
+                            label: labelCtrl.text.trim(),
+                            emoji: emojiCtrl.text.trim().isEmpty
+                                ? '✨'
+                                : emojiCtrl.text.trim(),
+                            amount: amt,
+                            source: source,
+                            useCount: existing?.useCount ?? 0,
+                            sortOrder: nextOrder,
+                          );
+                          await repo.upsertQuickAction(qa);
+                          ref.invalidate(incomeQuickActionsCustomizeProvider);
+                          ref.invalidate(incomeQuickActionsProvider);
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        },
+                        child: Text(l10n.save),
+                      ),
+                    ],
+                  ),
                 ),
               );
-            },
-          );
-        },
-      );
-    } finally {
-      labelCtrl.dispose();
-      emojiCtrl.dispose();
-      amountCtrl.dispose();
-    }
+          },
+        );
+      },
+    );
   }
 }
