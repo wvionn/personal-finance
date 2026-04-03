@@ -12,13 +12,14 @@ import '../../domain/repositories/finance_repository.dart';
 class CsvExportService {
   static List<List<String>> _incomeRows(List<Income> items) {
     return [
-      ['incomes', 'id', 'amount', 'source', 'date', 'note'],
+      ['incomes', 'id', 'amount', 'source', 'date', 'account_type', 'note'],
       ...items.map((i) => [
             'income',
             i.id,
             i.amount.toString(),
             i.source,
             i.date.toIso8601String(),
+            i.accountType,
             i.note ?? '',
           ]),
     ];
@@ -26,13 +27,22 @@ class CsvExportService {
 
   static List<List<String>> _expenseRows(List<Expense> items) {
     return [
-      ['expenses', 'id', 'amount', 'category', 'date', 'note'],
+      [
+        'expenses',
+        'id',
+        'amount',
+        'category',
+        'date',
+        'account_type',
+        'note',
+      ],
       ...items.map((e) => [
             'expense',
             e.id,
             e.amount.toString(),
             e.category,
             e.date.toIso8601String(),
+            e.accountType,
             e.note ?? '',
           ]),
     ];

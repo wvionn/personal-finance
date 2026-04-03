@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../domain/entities/daily_spend_insight.dart';
 import '../../domain/entities/dashboard_summary.dart';
 import '../../domain/entities/expense.dart';
@@ -17,8 +18,18 @@ class FinanceRepositoryImpl implements FinanceRepository {
   final Database _db;
 
   @override
-  Future<List<Income>> getIncomes({String? query}) async {
-    final rows = await _db.query('incomes', orderBy: 'date_iso DESC');
+  Future<List<Income>> getIncomes({String? query, String? accountType}) async {
+    final normalizedAccountType = accountType?.trim();
+    final rows = await _db.query(
+      'incomes',
+      where: normalizedAccountType == null || normalizedAccountType.isEmpty
+          ? null
+          : 'account_type = ?',
+      whereArgs: normalizedAccountType == null || normalizedAccountType.isEmpty
+          ? null
+          : [normalizedAccountType],
+      orderBy: 'date_iso DESC',
+    );
     final list = rows.map(_incomeFromRow).toList();
     if (query == null || query.trim().isEmpty) return list;
     final q = query.toLowerCase();
@@ -46,8 +57,18 @@ class FinanceRepositoryImpl implements FinanceRepository {
   }
 
   @override
-  Future<List<Expense>> getExpenses({String? query}) async {
-    final rows = await _db.query('expenses', orderBy: 'date_iso DESC');
+  Future<List<Expense>> getExpenses({String? query, String? accountType}) async {
+    final normalizedAccountType = accountType?.trim();
+    final rows = await _db.query(
+      'expenses',
+      where: normalizedAccountType == null || normalizedAccountType.isEmpty
+          ? null
+          : 'account_type = ?',
+      whereArgs: normalizedAccountType == null || normalizedAccountType.isEmpty
+          ? null
+          : [normalizedAccountType],
+      orderBy: 'date_iso DESC',
+    );
     final list = rows.map(_expenseFromRow).toList();
     if (query == null || query.trim().isEmpty) return list;
     final q = query.toLowerCase();
@@ -123,6 +144,26 @@ class FinanceRepositoryImpl implements FinanceRepository {
   }) async {
     final allInc = await _sumColumn('incomes', 'amount');
     final allExp = await _sumColumn('expenses', 'amount');
+    final allCashInc = await _sumColumnByAccountType(
+      'incomes',
+      'amount',
+      kAccountTypeCash,
+    );
+    final allCashExp = await _sumColumnByAccountType(
+      'expenses',
+      'amount',
+      kAccountTypeCash,
+    );
+    final allBankInc = await _sumColumnByAccountType(
+      'incomes',
+      'amount',
+      kAccountTypeBank,
+    );
+    final allBankExp = await _sumColumnByAccountType(
+      'expenses',
+      'amount',
+      kAccountTypeBank,
+    );
 
     late final DateTime from;
     late final DateTime to;
@@ -146,6 +187,10 @@ class FinanceRepositoryImpl implements FinanceRepository {
     return DashboardSummary(
       allTimeIncome: allInc,
       allTimeExpense: allExp,
+      allTimeCashIncome: allCashInc,
+      allTimeCashExpense: allCashExp,
+      allTimeBankIncome: allBankInc,
+      allTimeBankExpense: allBankExp,
       periodIncome: periodInc,
       periodExpense: periodExp,
       chartPoints: chart,
@@ -282,6 +327,21 @@ class FinanceRepositoryImpl implements FinanceRepository {
     return (r.first['t']! as num).toDouble();
   }
 
+  Future<double> _sumColumnByAccountType(
+    String table,
+    String column,
+    String accountType,
+  ) async {
+    final r = await _db.rawQuery(
+      '''
+      SELECT COALESCE(SUM($column), 0) AS t FROM $table
+      WHERE account_type = ?
+      ''',
+      [accountType],
+    );
+    return (r.first['t']! as num).toDouble();
+  }
+
   Future<double> _sumInRange(
     String table,
     String column,
@@ -303,6 +363,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
     amount: (row['amount']! as num).toDouble(),
     source: row['source']! as String,
     date: DateTime.parse(row['date_iso']! as String),
+    accountType: (row['account_type'] as String?) ?? kAccountTypeCash,
     note: row['note'] as String?,
   );
 
@@ -311,6 +372,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
     'amount': i.amount,
     'source': i.source,
     'date_iso': i.date.toIso8601String(),
+    'account_type': i.accountType,
     'note': i.note,
   };
 
@@ -319,6 +381,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
     amount: (row['amount']! as num).toDouble(),
     category: row['category']! as String,
     date: DateTime.parse(row['date_iso']! as String),
+    accountType: (row['account_type'] as String?) ?? kAccountTypeCash,
     note: row['note'] as String?,
   );
 
@@ -327,6 +390,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
     'amount': e.amount,
     'category': e.category,
     'date_iso': e.date.toIso8601String(),
+    'account_type': e.accountType,
     'note': e.note,
   };
 

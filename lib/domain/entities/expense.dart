@@ -4,6 +4,7 @@ class Expense {
     required this.amount,
     required this.category,
     required this.date,
+    this.accountType = 'cash',
     this.note,
   });
 
@@ -11,5 +12,6 @@ class Expense {
   final double amount;
   final String category;
   final DateTime date;
+  final String accountType;
   final String? note;
 }

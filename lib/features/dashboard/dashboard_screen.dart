@@ -8,6 +8,7 @@ import '../../core/providers/core_providers.dart';
 import '../../core/services/csv_export_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/localized_labels.dart';
 import '../../core/notifications/idle_transaction_nudge.dart';
 import '../../core/widgets/section_card.dart';
 import '../../domain/entities/daily_spend_insight.dart'
@@ -138,11 +139,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ]
         : quickIncomes.take(kMaxQuickActions).toList();
+      final cashAccountLabel = accountTypeLabel(kAccountTypeCash, lang);
+      final bankAccountLabel = accountTypeLabel(kAccountTypeBank, lang);
+      final cashBalanceLabel = lang == 'id'
+        ? '${l10n.balance} $cashAccountLabel'
+        : '$cashAccountLabel ${l10n.balance}';
+      final bankBalanceLabel = lang == 'id'
+        ? '${l10n.balance} $bankAccountLabel'
+        : '$bankAccountLabel ${l10n.balance}';
+
     return DashboardFlowCard(
       balanceLabel: l10n.balance,
       balanceFormatted: formatMoney(s.balance, languageCode: lang),
       balanceSubtitle: l10n.balanceSubtitle,
       balanceColor: s.balance >= 0
+          ? AppTheme.positiveMoney
+          : AppTheme.spendStress,
+        cashBalanceLabel: cashBalanceLabel,
+        cashBalanceFormatted: formatMoney(s.cashBalance, languageCode: lang),
+        cashBalanceColor: s.cashBalance >= 0
+          ? AppTheme.positiveMoney
+          : AppTheme.spendStress,
+        bankBalanceLabel: bankBalanceLabel,
+        bankBalanceFormatted: formatMoney(s.bankBalance, languageCode: lang),
+        bankBalanceColor: s.bankBalance >= 0
           ? AppTheme.positiveMoney
           : AppTheme.spendStress,
       goalTitle: '${l10n.savingsGoal} · ${g.title}',
@@ -429,6 +449,48 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SectionCard(
+                          child: _miniStat(
+                            context,
+                            _accountMetricTitle(
+                              lang: lang,
+                              metricLabel: l10n.income,
+                              accountType: kAccountTypeBank,
+                            ),
+                            formatMoney(
+                              s.allTimeBankIncome,
+                              languageCode: lang,
+                            ),
+                            Icons.account_balance_wallet_outlined,
+                            AppTheme.chartIncome,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SectionCard(
+                          child: _miniStat(
+                            context,
+                            _accountMetricTitle(
+                              lang: lang,
+                              metricLabel: l10n.expense,
+                              accountType: kAccountTypeBank,
+                            ),
+                            formatMoney(
+                              s.allTimeBankExpense,
+                              languageCode: lang,
+                            ),
+                            Icons.account_balance_wallet_outlined,
+                            AppTheme.chartExpense,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 20),
                   Text(
                     '${l10n.trend} (${DateFormat.MMMM(lang == 'en' ? 'en_US' : 'id_ID').format(anchor)})',
@@ -495,6 +557,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
       ],
     );
+  }
+
+  String _accountMetricTitle({
+    required String lang,
+    required String metricLabel,
+    required String accountType,
+  }) {
+    final accountLabel = accountTypeLabel(accountType, lang);
+    if (lang == 'id') {
+      return '$metricLabel $accountLabel';
+    }
+    return '$accountLabel $metricLabel';
   }
 }
 

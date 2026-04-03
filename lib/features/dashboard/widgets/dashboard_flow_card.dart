@@ -14,6 +14,12 @@ class DashboardFlowCard extends StatelessWidget {
     required this.balanceFormatted,
     required this.balanceSubtitle,
     required this.balanceColor,
+    required this.cashBalanceLabel,
+    required this.cashBalanceFormatted,
+    required this.cashBalanceColor,
+    required this.bankBalanceLabel,
+    required this.bankBalanceFormatted,
+    required this.bankBalanceColor,
     required this.goalTitle,
     required this.goalProgressLabel,
     required this.progress,
@@ -33,6 +39,12 @@ class DashboardFlowCard extends StatelessWidget {
   final String balanceFormatted;
   final String balanceSubtitle;
   final Color balanceColor;
+  final String cashBalanceLabel;
+  final String cashBalanceFormatted;
+  final Color cashBalanceColor;
+  final String bankBalanceLabel;
+  final String bankBalanceFormatted;
+  final Color bankBalanceColor;
   final String goalTitle;
   final String goalProgressLabel;
   final double progress;
@@ -91,7 +103,68 @@ class DashboardFlowCard extends StatelessWidget {
             context,
           ).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted),
         ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _accountBalanceTile(
+                context,
+                label: cashBalanceLabel,
+                value: cashBalanceFormatted,
+                valueColor: cashBalanceColor,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _accountBalanceTile(
+                context,
+                label: bankBalanceLabel,
+                value: bankBalanceFormatted,
+                valueColor: bankBalanceColor,
+              ),
+            ),
+          ],
+        ),
       ],
+    );
+  }
+
+  Widget _accountBalanceTile(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required Color valueColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.panel,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.borderHighlight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: AppTheme.textMuted),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: valueColor,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../core/providers/core_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
@@ -203,14 +204,16 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
       await repo.deleteExpense(id);
     }
 
+    if (!mounted) return;
+    final msg = l10n.deleteSelectedExpensesDone(count);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(SnackBar(content: Text(msg)));
+
     _clearSelection();
     ref.invalidate(expenseListProvider);
     ref.invalidate(dashboardSummaryProvider);
     ref.invalidate(dailyInsightProvider);
-    if (!mounted) return;
-    final msg = l10n.deleteSelectedExpensesDone(count);
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   Future<void> _refreshExpensePage() async {
@@ -228,6 +231,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     final lang = Localizations.localeOf(context).languageCode;
     final listAsync = ref.watch(expenseListProvider);
     final query = ref.watch(expenseSearchProvider);
+    final accountTypeFilter = ref.watch(expenseAccountTypeFilterProvider);
     final selectedLabel = l10n.selectedCount(_selectedExpenseIds.length);
     final dateFilterLabel = _dateFilterLabel(l10n, lang);
 
@@ -270,6 +274,36 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
               decoration: InputDecoration(
                 hintText: l10n.searchExpense,
                 prefixIcon: const Icon(Icons.search),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: SegmentedButton<String>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment<String>(
+                    value: kAccountTypeAll,
+                    label: Text(accountTypeLabel(kAccountTypeAll, lang)),
+                  ),
+                  ButtonSegment<String>(
+                    value: kAccountTypeCash,
+                    label: Text(accountTypeLabel(kAccountTypeCash, lang)),
+                  ),
+                  ButtonSegment<String>(
+                    value: kAccountTypeBank,
+                    label: Text(accountTypeLabel(kAccountTypeBank, lang)),
+                  ),
+                ],
+                selected: {accountTypeFilter},
+                onSelectionChanged: (selection) {
+                  if (selection.isEmpty) return;
+                  ref.read(expenseAccountTypeFilterProvider.notifier).state =
+                      selection.first;
+                  _clearSelection();
+                },
               ),
             ),
           ),
@@ -341,6 +375,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                           title: Text(expenseCategoryLabel(exp.category, lang)),
                           subtitle: Text(
                             '${formatShortDate(exp.date, languageCode: lang)}'
+                            ' · ${accountTypeLabel(exp.accountType, lang)}'
                             '${exp.note != null ? ' · ${exp.note}' : ''}',
                           ),
                           trailing: Row(

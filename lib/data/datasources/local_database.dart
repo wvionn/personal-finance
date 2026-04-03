@@ -4,7 +4,7 @@ import 'package:sqflite/sqflite.dart';
 
 class LocalDatabase {
   static const _name = 'catat_uang.db';
-  static const _version = 4;
+  static const _version = 5;
 
   static Future<Database> open() async {
     final dir = await getApplicationDocumentsDirectory();
@@ -49,6 +49,14 @@ class LocalDatabase {
       );
       await db.execute('ALTER TABLE wishlist ADD COLUMN item_url TEXT');
     }
+    if (oldVersion < 5) {
+      await db.execute(
+        "ALTER TABLE incomes ADD COLUMN account_type TEXT NOT NULL DEFAULT 'cash'",
+      );
+      await db.execute(
+        "ALTER TABLE expenses ADD COLUMN account_type TEXT NOT NULL DEFAULT 'cash'",
+      );
+    }
   }
 
   static Future<void> _baseTables(Database db) async {
@@ -58,6 +66,7 @@ class LocalDatabase {
         amount REAL NOT NULL,
         source TEXT NOT NULL,
         date_iso TEXT NOT NULL,
+        account_type TEXT NOT NULL DEFAULT 'cash',
         note TEXT
       );
     ''');
@@ -67,6 +76,7 @@ class LocalDatabase {
         amount REAL NOT NULL,
         category TEXT NOT NULL,
         date_iso TEXT NOT NULL,
+        account_type TEXT NOT NULL DEFAULT 'cash',
         note TEXT
       );
     ''');

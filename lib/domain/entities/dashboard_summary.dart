@@ -5,6 +5,10 @@ class DashboardSummary {
   const DashboardSummary({
     required this.allTimeIncome,
     required this.allTimeExpense,
+    required this.allTimeCashIncome,
+    required this.allTimeCashExpense,
+    required this.allTimeBankIncome,
+    required this.allTimeBankExpense,
     required this.periodIncome,
     required this.periodExpense,
     required this.chartPoints,
@@ -13,6 +17,10 @@ class DashboardSummary {
 
   final double allTimeIncome;
   final double allTimeExpense;
+  final double allTimeCashIncome;
+  final double allTimeCashExpense;
+  final double allTimeBankIncome;
+  final double allTimeBankExpense;
 
   /// Income within the selected day or month window.
   final double periodIncome;
@@ -22,6 +30,8 @@ class DashboardSummary {
   final SummaryMode mode;
 
   double get balance => allTimeIncome - allTimeExpense;
+  double get cashBalance => allTimeCashIncome - allTimeCashExpense;
+  double get bankBalance => allTimeBankIncome - allTimeBankExpense;
 }
 
 class ChartPoint {

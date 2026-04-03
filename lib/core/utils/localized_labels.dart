@@ -55,3 +55,22 @@ String incomeSourceLabel(String raw, String languageCode) {
     _ => raw,
   };
 }
+
+String accountTypeLabel(String raw, String languageCode) {
+  final key = raw.trim().toLowerCase();
+  if (languageCode == 'id') {
+    return switch (key) {
+      'cash' => 'Tunai',
+      'bank' => 'Bank',
+      'all' => 'Semua',
+      _ => raw,
+    };
+  }
+
+  return switch (key) {
+    'cash' => 'Cash',
+    'bank' => 'Bank',
+    'all' => 'All',
+    _ => raw,
+  };
+}

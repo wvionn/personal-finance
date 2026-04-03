@@ -9,11 +9,11 @@ import '../entities/wishlist_item.dart';
 
 /// Persistence contract — UI depends on this, not on SQLite.
 abstract class FinanceRepository {
-  Future<List<Income>> getIncomes({String? query});
+  Future<List<Income>> getIncomes({String? query, String? accountType});
   Future<void> upsertIncome(Income income);
   Future<void> deleteIncome(String id);
 
-  Future<List<Expense>> getExpenses({String? query});
+  Future<List<Expense>> getExpenses({String? query, String? accountType});
   Future<void> upsertExpense(Expense expense);
   Future<void> deleteExpense(String id);
 

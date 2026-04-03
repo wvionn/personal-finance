@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../core/providers/core_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
@@ -203,14 +204,16 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
       await repo.deleteIncome(id);
     }
 
+    if (!mounted) return;
+    final msg = l10n.deleteSelectedIncomesDone(count);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(SnackBar(content: Text(msg)));
+
     _clearSelection();
     ref.invalidate(incomeListProvider);
     ref.invalidate(dashboardSummaryProvider);
     ref.invalidate(dailyInsightProvider);
-    if (!mounted) return;
-    final msg = l10n.deleteSelectedIncomesDone(count);
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   Future<void> _refreshIncomePage() async {
@@ -227,6 +230,7 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
     final lang = Localizations.localeOf(context).languageCode;
     final listAsync = ref.watch(incomeListProvider);
     final query = ref.watch(incomeSearchProvider);
+    final accountTypeFilter = ref.watch(incomeAccountTypeFilterProvider);
     final selectedLabel = l10n.selectedCount(_selectedIncomeIds.length);
     final dateFilterLabel = _dateFilterLabel(l10n, lang);
 
@@ -268,6 +272,36 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
               decoration: InputDecoration(
                 hintText: l10n.searchIncome,
                 prefixIcon: const Icon(Icons.search),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: SegmentedButton<String>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment<String>(
+                    value: kAccountTypeAll,
+                    label: Text(accountTypeLabel(kAccountTypeAll, lang)),
+                  ),
+                  ButtonSegment<String>(
+                    value: kAccountTypeCash,
+                    label: Text(accountTypeLabel(kAccountTypeCash, lang)),
+                  ),
+                  ButtonSegment<String>(
+                    value: kAccountTypeBank,
+                    label: Text(accountTypeLabel(kAccountTypeBank, lang)),
+                  ),
+                ],
+                selected: {accountTypeFilter},
+                onSelectionChanged: (selection) {
+                  if (selection.isEmpty) return;
+                  ref.read(incomeAccountTypeFilterProvider.notifier).state =
+                      selection.first;
+                  _clearSelection();
+                },
               ),
             ),
           ),
@@ -339,6 +373,7 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
                           title: Text(incomeSourceLabel(inc.source, lang)),
                           subtitle: Text(
                             '${formatShortDate(inc.date, languageCode: lang)}'
+                            ' · ${accountTypeLabel(inc.accountType, lang)}'
                             '${inc.note != null ? ' · ${inc.note}' : ''}',
                           ),
                           trailing: Row(

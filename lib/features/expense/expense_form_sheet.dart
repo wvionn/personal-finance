@@ -25,6 +25,7 @@ class _ExpenseFormSheetState extends ConsumerState<ExpenseFormSheet> {
   late final TextEditingController _customCategoryCtrl;
   late DateTime _date;
   late String _presetCategory;
+  late String _accountType;
   final _formKey = GlobalKey<FormState>();
   static const _uuid = Uuid();
 
@@ -43,6 +44,10 @@ class _ExpenseFormSheetState extends ConsumerState<ExpenseFormSheet> {
     } else {
       _presetCategory = 'Other';
       _customCategoryCtrl.text = e.category;
+    }
+    _accountType = e?.accountType ?? kAccountTypeCash;
+    if (!kAccountTypes.contains(_accountType)) {
+      _accountType = kAccountTypeCash;
     }
   }
 
@@ -112,6 +117,24 @@ class _ExpenseFormSheetState extends ConsumerState<ExpenseFormSheet> {
                     setState(() => _presetCategory = v ?? 'Other'),
                 decoration: InputDecoration(labelText: l10n.categoryField),
               ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                // ignore: deprecated_member_use
+                value: _accountType,
+                items: kAccountTypes
+                    .map(
+                      (type) => DropdownMenuItem(
+                        value: type,
+                        child: Text(accountTypeLabel(type, lang)),
+                      ),
+                    )
+                    .toList(growable: false),
+                onChanged: (v) =>
+                    setState(() => _accountType = v ?? kAccountTypeCash),
+                decoration: InputDecoration(
+                  labelText: lang == 'id' ? 'Akun' : 'Account',
+                ),
+              ),
               if (_presetCategory == 'Other') ...[
                 const SizedBox(height: 12),
                 TextFormField(
@@ -164,6 +187,7 @@ class _ExpenseFormSheetState extends ConsumerState<ExpenseFormSheet> {
                     amount: double.parse(_amountCtrl.text.trim()),
                     category: cat,
                     date: _date,
+                    accountType: _accountType,
                     note: _noteCtrl.text.trim().isEmpty
                         ? null
                         : _noteCtrl.text.trim(),
