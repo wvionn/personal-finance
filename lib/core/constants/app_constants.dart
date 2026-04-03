@@ -23,3 +23,6 @@ const kIncomeSources = <String>[
 
 /// Dashboard −10k quick expense bucket.
 const kQuickMiscCategory = 'Lainnya';
+
+/// Upper bound for quick-action buttons shown and managed in UI.
+const kMaxQuickActions = 6;

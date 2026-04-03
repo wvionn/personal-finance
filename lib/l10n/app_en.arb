@@ -77,6 +77,8 @@
   "savingsWithdrawalNote": "Savings withdrawal",
   "monthlySavingsTitle": "Monthly savings",
   "quickIncomeTitle": "Quick income",
+  "maxQuickActionsNote": "Max 6 actions",
+  "quickActionsLimitReached": "You can only add up to 6 quick actions.",
   "greetingMorning": "Good morning,",
   "greetingNoon": "Good afternoon,",
   "greetingEvening": "Good evening,",

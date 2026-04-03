@@ -22,10 +22,10 @@ class DashboardFlowCard extends StatelessWidget {
     required this.onTapGoal,
     required this.monthlySavingsTitle,
     required this.quickIncomeTitle,
+    required this.maxQuickActionsNote,
     required this.onEditQuickIncome,
     required this.incomeQuickActions,
     required this.onFireQuickIncome,
-    required this.onHardcodedExpense, // To keep the old -10k behavior
     required this.lang,
   });
 
@@ -41,10 +41,10 @@ class DashboardFlowCard extends StatelessWidget {
   final VoidCallback onTapGoal;
   final String monthlySavingsTitle;
   final String quickIncomeTitle;
+  final String maxQuickActionsNote;
   final VoidCallback onEditQuickIncome;
   final List<QuickAction> incomeQuickActions;
   final Function(QuickAction) onFireQuickIncome;
-  final VoidCallback onHardcodedExpense;
   final String lang;
 
   @override
@@ -54,9 +54,9 @@ class DashboardFlowCard extends StatelessWidget {
       children: [
         _buildHeroSection(context),
         const SizedBox(height: 24),
-        _buildQuickSectionTitle(context, quickIncomeTitle),
+        _buildQuickSectionTitle(context, quickIncomeTitle, maxQuickActionsNote),
         const SizedBox(height: 12),
-        _buildIncomeGrid(),
+        _buildIncomeGrid(context),
         const SizedBox(height: 24),
         _buildSavingsSection(context),
       ],
@@ -87,24 +87,41 @@ class DashboardFlowCard extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           balanceSubtitle,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppTheme.textMuted,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted),
         ),
       ],
     );
   }
 
-  Widget _buildQuickSectionTitle(BuildContext context, String title) {
+  Widget _buildQuickSectionTitle(
+    BuildContext context,
+    String title,
+    String note,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w800,
                 color: AppTheme.textMain,
               ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              note,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppTheme.textMuted),
+            ),
+          ],
         ),
         IconButton(
           onPressed: onEditQuickIncome,
@@ -116,35 +133,34 @@ class DashboardFlowCard extends StatelessWidget {
     );
   }
 
-  Widget _buildIncomeGrid() {
-    return Row(
-      children: [
-        for (final qa in incomeQuickActions) ...[
-          Expanded(
-            child: QuickPillButton(
-              icon: null,
-              label: '${qa.emoji} ${qa.label}',
-              subtitle: '+ ${formatMoney(qa.amount, languageCode: lang)}',
-              compact: true,
-              borderColor: AppTheme.borderHighlight,
-              labelColor: AppTheme.textMain,
-              onTap: () => onFireQuickIncome(qa),
-            ),
-          ),
-          const SizedBox(width: 10),
-        ],
-        Expanded(
-          child: QuickPillButton(
-            icon: Icons.add_card_rounded,
-            label: "−10 rb",
-            subtitle: "Cepat",
-            compact: true,
-            borderColor: AppTheme.borderHighlight,
-            labelColor: AppTheme.spendStress,
-            onTap: onHardcodedExpense, // Ideally this maps to an expense func, just mirroring UI
-          ),
-        ),
-      ],
+  Widget _buildIncomeGrid(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 8.0;
+        final columns = constraints.maxWidth >= 560 ? 3 : 2;
+        final totalSpacing = spacing * (columns - 1);
+        final itemWidth = (constraints.maxWidth - totalSpacing) / columns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final qa in incomeQuickActions)
+              SizedBox(
+                width: itemWidth,
+                child: QuickPillButton(
+                  icon: null,
+                  label: '${qa.emoji} ${qa.label}',
+                  subtitle: '+ ${formatMoney(qa.amount, languageCode: lang)}',
+                  compact: true,
+                  borderColor: AppTheme.borderHighlight,
+                  labelColor: AppTheme.textMain,
+                  onTap: () => onFireQuickIncome(qa),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -161,23 +177,22 @@ class DashboardFlowCard extends StatelessWidget {
               Text(
                 monthlySavingsTitle,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppTheme.textMain,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  color: AppTheme.textMain,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-              Icon(
-                Icons.edit,
-                size: 16,
-                color: AppTheme.textMain,
-              ),
+              Icon(Icons.edit, size: 16, color: AppTheme.textMain),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            goalTitle.split('·').last.trim(), // Showing just "My savings goal" cleanly
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppTheme.textMain,
-                ),
+            goalTitle
+                .split('·')
+                .last
+                .trim(), // Showing just "My savings goal" cleanly
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: AppTheme.textMain),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -185,9 +200,9 @@ class DashboardFlowCard extends StatelessWidget {
           Text(
             "$savedFormatted / $targetFormatted",
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: AppTheme.textMuted,
-                ),
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textMuted,
+            ),
           ),
           const SizedBox(height: 12),
           TweenAnimationBuilder<double>(

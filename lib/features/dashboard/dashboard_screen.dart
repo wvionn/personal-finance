@@ -13,7 +13,6 @@ import '../../core/widgets/section_card.dart';
 import '../../domain/entities/daily_spend_insight.dart'
     show DailySpendInsight, SpendVibe;
 import '../../domain/entities/dashboard_summary.dart';
-import '../../domain/entities/expense.dart';
 import '../../domain/entities/income.dart';
 import '../../domain/entities/quick_action.dart';
 import '../../domain/entities/savings_goal.dart';
@@ -48,7 +47,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _summarySub = ref.listenManual(dashboardSummaryProvider, (previous, next) {
       next.whenData((_) {
         final repo = ref.read(financeRepositoryProvider);
-        Future.microtask(() => IdleTransactionNudge.maybeAfterDashboardLoad(repo));
+        Future.microtask(
+          () => IdleTransactionNudge.maybeAfterDashboardLoad(repo),
+        );
       });
     });
   }
@@ -100,30 +101,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Future<void> _quickExpense(
-    WidgetRef ref,
-    BuildContext context,
-    double amount,
-    String lang, {
-    String? snackMessage,
-  }) async {
-    final l10n = AppLocalizations.of(context)!;
-    final repo = ref.read(financeRepositoryProvider);
-    await repo.upsertExpense(
-      Expense(
-        id: _uuid.v4(),
-        amount: amount,
-        category: kQuickMiscCategory,
-        date: DateTime.now(),
-        note: l10n.savingsWithdrawalNote,
-      ),
-    );
-    _invalidateFinance(ref);
-    if (context.mounted) {
-      _flash(context, snackMessage ?? l10n.recorded);
-    }
-  }
-
   Widget _dashboardFlowCard(
     BuildContext context,
     WidgetRef ref,
@@ -156,11 +133,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               id: 'dash-default-20',
               type: QuickActionType.income,
               label: l10n.quickAddIncome20,
-              emoji: '🎯',
+              emoji: '',
               amount: 20000,
             ),
           ]
-        : quickIncomes.take(2).toList();
+        : quickIncomes.take(kMaxQuickActions).toList();
     return DashboardFlowCard(
       balanceLabel: l10n.balance,
       balanceFormatted: formatMoney(s.balance, languageCode: lang),
@@ -185,6 +162,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ),
       monthlySavingsTitle: l10n.monthlySavingsTitle,
       quickIncomeTitle: l10n.quickIncomeTitle,
+      maxQuickActionsNote: l10n.maxQuickActionsNote,
       onEditQuickIncome: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (context) => const IncomeQuickActionsCustomizeScreen(),
@@ -203,23 +181,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             .incrementQuickActionUse(qa.id);
         ref.invalidate(incomeQuickActionsProvider);
       },
-      onHardcodedExpense: () => _quickExpense(
-        ref,
-        context,
-        10000,
-        lang,
-        snackMessage: FlowQuips.afterExpense(
-          lang,
-          category: kQuickMiscCategory,
-        ),
-      ),
       lang: lang,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-
     final l10n = AppLocalizations.of(context)!;
     final lang = Localizations.localeOf(context).languageCode;
     final summaryAsync = ref.watch(dashboardSummaryProvider);

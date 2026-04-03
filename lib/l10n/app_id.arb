@@ -77,6 +77,8 @@
   "savingsWithdrawalNote": "Tarik tabungan",
   "monthlySavingsTitle": "Tabungan bulanan",
   "quickIncomeTitle": "Pemasukan cepat",
+  "maxQuickActionsNote": "Maks 6 aksi",
+  "quickActionsLimitReached": "Kamu hanya bisa menambahkan sampai 6 aksi cepat.",
   "greetingMorning": "Selamat pagi,",
   "greetingNoon": "Selamat siang,",
   "greetingEvening": "Selamat sore,",
