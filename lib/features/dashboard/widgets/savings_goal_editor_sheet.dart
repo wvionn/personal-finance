@@ -39,36 +39,12 @@ class _SavingsGoalEditorSheetState
     final l10n = AppLocalizations.of(context)!;
     final title = isAdd ? l10n.addSavingsTitle : l10n.withdrawSavingsTitle;
 
-    final ctrl = TextEditingController();
     final amt = await showDialog<double>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: ctrl,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          autofocus: true,
-          decoration: InputDecoration(hintText: '0', prefixText: 'Rp '),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              final val = double.tryParse(ctrl.text.trim());
-              Navigator.pop(ctx, val);
-            },
-            child: Text(l10n.save),
-          ),
-        ],
-      ),
+      builder: (ctx) => _AdjustSavedDialog(title: title),
     );
 
-    ctrl.dispose();
-
-    if (amt != null && amt > 0) {
+    if (amt != null && amt > 0 && mounted) {
       final current = double.tryParse(_savedCtrl.text.trim()) ?? 0.0;
       final next = isAdd ? current + amt : current - amt;
       setState(() {
@@ -101,6 +77,7 @@ class _SavingsGoalEditorSheetState
             const SizedBox(height: 16),
             TextFormField(
               controller: _savedCtrl,
+              readOnly: true,
               decoration: InputDecoration(labelText: l10n.currentlySaved),
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
@@ -167,14 +144,62 @@ class _SavingsGoalEditorSheetState
                     savedAmount: double.tryParse(_savedCtrl.text.trim()) ?? 0,
                   ),
                 );
-                ref.invalidate(savingsGoalProvider);
-                if (context.mounted) Navigator.pop(context);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
+                
+                Future.microtask(() => ref.invalidate(savingsGoalProvider));
               },
               child: Text(l10n.save),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AdjustSavedDialog extends StatefulWidget {
+  const _AdjustSavedDialog({required this.title});
+  final String title;
+
+  @override
+  State<_AdjustSavedDialog> createState() => _AdjustSavedDialogState();
+}
+
+class _AdjustSavedDialogState extends State<_AdjustSavedDialog> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        controller: _ctrl,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        autofocus: true,
+        decoration: const InputDecoration(hintText: '0', prefixText: 'Rp '),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () {
+            final val = double.tryParse(_ctrl.text.trim());
+            Navigator.pop(context, val);
+          },
+          child: Text(l10n.save),
+        ),
+      ],
     );
   }
 }

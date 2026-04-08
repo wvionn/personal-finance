@@ -120,7 +120,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         );
     final progress = g.targetAmount <= 0
         ? 0.0
-        : (s.balance / g.targetAmount).clamp(0.0, 1.0);
+        : (g.savedAmount / g.targetAmount).clamp(0.0, 1.0);
     final incomeActions = quickIncomes.isEmpty
         ? [
             QuickAction(
@@ -139,12 +139,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ]
         : quickIncomes.take(kMaxQuickActions).toList();
-      final cashAccountLabel = accountTypeLabel(kAccountTypeCash, lang);
-      final bankAccountLabel = accountTypeLabel(kAccountTypeBank, lang);
-      final cashBalanceLabel = lang == 'id'
+    final cashAccountLabel = accountTypeLabel(kAccountTypeCash, lang);
+    final bankAccountLabel = accountTypeLabel(kAccountTypeBank, lang);
+    final cashBalanceLabel = lang == 'id'
         ? '${l10n.balance} $cashAccountLabel'
         : '$cashAccountLabel ${l10n.balance}';
-      final bankBalanceLabel = lang == 'id'
+    final bankBalanceLabel = lang == 'id'
         ? '${l10n.balance} $bankAccountLabel'
         : '$bankAccountLabel ${l10n.balance}';
 
@@ -155,21 +155,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       balanceColor: s.balance >= 0
           ? AppTheme.positiveMoney
           : AppTheme.spendStress,
-        cashBalanceLabel: cashBalanceLabel,
-        cashBalanceFormatted: formatMoney(s.cashBalance, languageCode: lang),
-        cashBalanceColor: s.cashBalance >= 0
+      cashBalanceLabel: cashBalanceLabel,
+      cashBalanceFormatted: formatMoney(s.cashBalance, languageCode: lang),
+      cashBalanceColor: s.cashBalance >= 0
           ? AppTheme.positiveMoney
           : AppTheme.spendStress,
-        bankBalanceLabel: bankBalanceLabel,
-        bankBalanceFormatted: formatMoney(s.bankBalance, languageCode: lang),
-        bankBalanceColor: s.bankBalance >= 0
+      bankBalanceLabel: bankBalanceLabel,
+      bankBalanceFormatted: formatMoney(s.bankBalance, languageCode: lang),
+      bankBalanceColor: s.bankBalance >= 0
           ? AppTheme.positiveMoney
           : AppTheme.spendStress,
       goalTitle: '${l10n.savingsGoal} · ${g.title}',
       goalProgressLabel: '${(progress * 100).round()}%',
       progress: progress,
       savedFormatted: formatMoney(
-        s.balance < 0 ? 0 : s.balance,
+        g.savedAmount < 0 ? 0 : g.savedAmount,
         languageCode: lang,
       ),
       targetFormatted: formatMoney(g.targetAmount, languageCode: lang),
@@ -269,53 +269,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             const SizedBox(height: 12),
             summaryAsync.when(
-              data: (s) => goalAsync.when(
-                data: (goal) => quickIncomesAsync.when(
-                  data: (quickIncomes) => _dashboardFlowCard(
-                    context,
-                    ref,
-                    s,
-                    goal,
-                    l10n,
-                    lang,
-                    quickIncomes,
-                  ),
-                  loading: () =>
-                      _dashboardFlowCard(context, ref, s, goal, l10n, lang, []),
-                  error: (error, stackTrace) =>
-                      _dashboardFlowCard(context, ref, s, goal, l10n, lang, []),
-                ),
-                loading: () => quickIncomesAsync.when(
-                  data: (quickIncomes) => _dashboardFlowCard(
-                    context,
-                    ref,
-                    s,
-                    null,
-                    l10n,
-                    lang,
-                    quickIncomes,
-                  ),
-                  loading: () =>
-                      _dashboardFlowCard(context, ref, s, null, l10n, lang, []),
-                  error: (error, stackTrace) =>
-                      _dashboardFlowCard(context, ref, s, null, l10n, lang, []),
-                ),
-                error: (err, st) => quickIncomesAsync.when(
-                  data: (quickIncomes) => _dashboardFlowCard(
-                    context,
-                    ref,
-                    s,
-                    null,
-                    l10n,
-                    lang,
-                    quickIncomes,
-                  ),
-                  loading: () =>
-                      _dashboardFlowCard(context, ref, s, null, l10n, lang, []),
-                  error: (error, stackTrace) =>
-                      _dashboardFlowCard(context, ref, s, null, l10n, lang, []),
-                ),
-              ),
+              data: (s) {
+                final goal = goalAsync.valueOrNull;
+                final quickIncomes = quickIncomesAsync.valueOrNull ?? [];
+                return _dashboardFlowCard(
+                  context,
+                  ref,
+                  s,
+                  goal,
+                  l10n,
+                  lang,
+                  quickIncomes,
+                );
+              },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Text('$e'),
             ),
