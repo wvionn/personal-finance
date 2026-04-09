@@ -302,6 +302,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       value: SummaryMode.daily,
                       label: Text(l10n.daily),
                     ),
+                    const ButtonSegment(
+                      value: SummaryMode.customRange,
+                      label: Text('Rentang'),
+                    ),
                   ],
                   selected: {mode},
                   style: ButtonStyle(
@@ -359,6 +363,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         DateTime(anchor.year, anchor.month),
                         languageCode: lang,
                       ),
+                    ),
+                  )
+                else if (mode == SummaryMode.customRange)
+                  TextButton.icon(
+                    onPressed: () async {
+                      final val = await showDateRangePicker(
+                        context: context,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                        initialDateRange: ref.read(customDashboardRangeProvider),
+                      );
+                      if (val != null) {
+                        ref.read(customDashboardRangeProvider.notifier).state = val;
+                        ref.invalidate(dashboardSummaryProvider);
+                      }
+                    },
+                    icon: const Icon(Icons.date_range, size: 18),
+                    label: Builder(
+                      builder: (ctx) {
+                        final cr = ref.watch(customDashboardRangeProvider);
+                        if (cr == null) return const Text('Pilih Tanggal');
+                        final format = DateFormat('d MMM', lang == 'en' ? 'en_US' : 'id_ID');
+                        return Text('${format.format(cr.start)} - ${format.format(cr.end)}');
+                      },
                     ),
                   )
                 else

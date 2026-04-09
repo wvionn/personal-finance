@@ -119,20 +119,24 @@ class _AiExpenseSheetState extends ConsumerState<AiExpenseSheet> {
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final nav = Navigator.of(context);
+
     final parsed = AiExpenseParser.parse(_ctrl.text, _uuid.v4());
     if (parsed == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.aiParseError)),
-        );
+        messenger.showSnackBar(SnackBar(content: Text(l10n.aiParseError)));
       }
       return;
     }
     final repo = ref.read(financeRepositoryProvider);
     await repo.upsertExpense(parsed);
+
+    if (mounted) nav.pop();
+    
     ref.invalidate(expenseListProvider);
     ref.invalidate(dashboardSummaryProvider);
     ref.invalidate(dailyInsightProvider);
-    if (mounted) Navigator.pop(context);
   }
 }

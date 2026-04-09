@@ -350,6 +350,12 @@ abstract class AppLocalizations {
   /// **'No data'**
   String get noChartData;
 
+  /// No description provided for @wishlistPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get wishlistPlanned;
+
   /// No description provided for @wishlistPurchased.
   ///
   /// In en, this message translates to:

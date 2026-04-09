@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/core_providers.dart';
@@ -15,16 +16,21 @@ final selectedDashboardAnchorProvider = StateProvider<DateTime>((ref) {
 final summaryModeProvider =
     StateProvider<SummaryMode>((ref) => SummaryMode.monthly);
 
+final customDashboardRangeProvider = StateProvider<DateTimeRange?>((ref) => null);
+
 final dashboardSummaryProvider =
     FutureProvider<DashboardSummary>((ref) async {
   final repo = ref.watch(financeRepositoryProvider);
   final anchor = ref.watch(selectedDashboardAnchorProvider);
   final mode = ref.watch(summaryModeProvider);
+  final customRange = ref.watch(customDashboardRangeProvider);
   final lang = ref.watch(localeProvider).languageCode;
+  
   return repo.getDashboardSummary(
     anchor: anchor,
     mode: mode,
     languageCode: lang,
+    customRange: customRange,
   );
 });
 

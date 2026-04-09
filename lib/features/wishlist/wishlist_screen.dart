@@ -18,13 +18,20 @@ import '../expense/expense_providers.dart';
 import 'wishlist_form_sheet.dart';
 import 'wishlist_providers.dart';
 
-class WishlistScreen extends ConsumerWidget {
+class WishlistScreen extends ConsumerStatefulWidget {
   const WishlistScreen({super.key});
 
+  @override
+  ConsumerState<WishlistScreen> createState() => _WishlistScreenState();
+}
+
+class _WishlistScreenState extends ConsumerState<WishlistScreen> {
   static const _uuid = Uuid();
+  WishlistPriority? _selectedPriority;
+  bool? _sortPriceDesc;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final lang = Localizations.localeOf(context).languageCode;
     final listAsync = ref.watch(wishlistProvider);
@@ -42,8 +49,18 @@ class WishlistScreen extends ConsumerWidget {
               subtitle: l10n.wishlistEmptySubtitle,
             );
           }
-          final open = items.where((w) => !w.purchased).toList()
-            ..sort(_priorityCompare);
+          var open = items.where((w) => !w.purchased).toList();
+          
+          if (_selectedPriority != null) {
+            open = open.where((w) => w.priority == _selectedPriority).toList();
+          }
+
+          if (_sortPriceDesc != null) {
+            open.sort((a, b) => _sortPriceDesc! ? b.estimatedPrice.compareTo(a.estimatedPrice) : a.estimatedPrice.compareTo(b.estimatedPrice));
+          } else {
+            open.sort(_priorityCompare);
+          }
+
           final done = items.where((w) => w.purchased).toList();
 
           return RefreshIndicator(
@@ -55,9 +72,33 @@ class WishlistScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               children: [
                 if (open.isNotEmpty) ...[
-                  Text(
-                    l10n.wishlistPlanned,
-                    style: Theme.of(context).textTheme.titleMedium,
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: PopupMenuButton<String>(
+                      icon: const Icon(Icons.sort),
+                      tooltip: 'Sort & Filter',
+                      onSelected: (val) {
+                        setState(() {
+                          if (val == 'price_desc') _sortPriceDesc = true;
+                          if (val == 'price_asc') _sortPriceDesc = false;
+                          if (val == 'default_sort') _sortPriceDesc = null;
+                          if (val == 'high') _selectedPriority = WishlistPriority.high;
+                          if (val == 'medium') _selectedPriority = WishlistPriority.medium;
+                          if (val == 'low') _selectedPriority = WishlistPriority.low;
+                          if (val == 'all') _selectedPriority = null;
+                        });
+                      },
+                      itemBuilder: (ctx) => [
+                        const PopupMenuItem(value: 'price_desc', child: Text('Harga Tertinggi')),
+                        const PopupMenuItem(value: 'price_asc', child: Text('Harga Terendah')),
+                        const PopupMenuItem(value: 'default_sort', child: Text('Prioritas (Default)')),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem(value: 'high', child: Text('High')),
+                        const PopupMenuItem(value: 'medium', child: Text('Medium')),
+                        const PopupMenuItem(value: 'low', child: Text('Low')),
+                        const PopupMenuItem(value: 'all', child: Text('All')),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 8),
                   ...open.map(
@@ -73,10 +114,6 @@ class WishlistScreen extends ConsumerWidget {
                 ],
                 if (done.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  Text(
-                    l10n.wishlistPurchased,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
                   const SizedBox(height: 8),
                   ...done.map(
                     (w) => _WishTile(
@@ -390,14 +427,24 @@ class _WishTile extends StatelessWidget {
               children: [
                 OutlinedButton.icon(
                   onPressed: onEdit,
-                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  icon: const Icon(Icons.edit_outlined, size: 16),
                   label: Text(l10n.edit),
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                 ),
                 if (!item.purchased && onPurchased != null)
                   FilledButton.icon(
                     onPressed: onPurchased,
-                    icon: const Icon(Icons.check, size: 18),
+                    icon: const Icon(Icons.check, size: 16),
                     label: Text(l10n.purchased),
+                    style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
                   ),
                 if (item.itemUrl != null && item.itemUrl!.isNotEmpty)
                   OutlinedButton.icon(
@@ -410,19 +457,29 @@ class _WishTile extends StatelessWidget {
                         );
                       }
                     },
-                    icon: const Icon(Icons.shopping_bag_outlined, size: 18),
+                    icon: const Icon(Icons.shopping_bag_outlined, size: 16),
                     label: Text(l10n.buyLink),
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
                   ),
                 TextButton.icon(
                   onPressed: onDelete,
                   icon: Icon(
                     Icons.delete_outline,
-                    size: 18,
+                    size: 16,
                     color: scheme.error,
                   ),
                   label: Text(
                     l10n.delete,
                     style: TextStyle(color: scheme.error),
+                  ),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],

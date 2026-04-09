@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import '../entities/daily_spend_insight.dart';
 import '../entities/dashboard_summary.dart';
 import '../entities/expense.dart';
@@ -28,6 +30,7 @@ abstract class FinanceRepository {
     required DateTime anchor,
     required SummaryMode mode,
     required String languageCode,
+    DateTimeRange? customRange,
   });
 
   /// Expense totals grouped by category for the given month.
