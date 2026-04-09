@@ -25,10 +25,7 @@ const kAccountTypeCash = 'cash';
 const kAccountTypeBank = 'bank';
 const kAccountTypeAll = 'all';
 
-const kAccountTypes = <String>[
-  kAccountTypeCash,
-  kAccountTypeBank,
-];
+const kAccountTypes = <String>[kAccountTypeCash, kAccountTypeBank];
 
 /// Dashboard −10k quick expense bucket.
 const kQuickMiscCategory = 'Lainnya';

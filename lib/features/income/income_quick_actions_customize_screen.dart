@@ -42,9 +42,7 @@ class IncomeQuickActionsCustomizeScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               Expanded(
                 child: items.isEmpty
-                    ? Center(
-                        child: Text(l10n.noChartData),
-                      )
+                    ? Center(child: Text(l10n.noChartData))
                     : ReorderableListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: items.length,
@@ -86,9 +84,9 @@ class IncomeQuickActionsCustomizeScreen extends ConsumerWidget {
                                   IconButton(
                                     icon: Icon(
                                       Icons.delete_outline,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .error,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
                                     ),
                                     onPressed: () =>
                                         _confirmDelete(context, ref, q),
@@ -253,7 +251,8 @@ class IncomeQuickActionsCustomizeScreen extends ConsumerWidget {
                         final incomes = all
                             .where((a) => a.type == QuickActionType.income)
                             .toList();
-                        if (existing == null && incomes.length >= kMaxQuickActions) {
+                        if (existing == null &&
+                            incomes.length >= kMaxQuickActions) {
                           if (ctx.mounted) {
                             _showQuickActionLimitReached(ctx);
                           }

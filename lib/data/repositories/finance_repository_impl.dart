@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -57,7 +58,10 @@ class FinanceRepositoryImpl implements FinanceRepository {
   }
 
   @override
-  Future<List<Expense>> getExpenses({String? query, String? accountType}) async {
+  Future<List<Expense>> getExpenses({
+    String? query,
+    String? accountType,
+  }) async {
     final normalizedAccountType = accountType?.trim();
     final rows = await _db.query(
       'expenses',
@@ -141,6 +145,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
     required DateTime anchor,
     required SummaryMode mode,
     required String languageCode,
+    DateTimeRange? customRange,
   }) async {
     final allInc = await _sumColumn('incomes', 'amount');
     final allExp = await _sumColumn('expenses', 'amount');
@@ -173,6 +178,10 @@ class FinanceRepositoryImpl implements FinanceRepository {
       from = DateTime(anchor.year, anchor.month);
       to = DateTime(anchor.year, anchor.month + 1, 0, 23, 59, 59, 999);
       chart = await _monthlyDailyBuckets(from, to, languageCode);
+    } else if (mode == SummaryMode.customRange && customRange != null) {
+      from = DateTime(customRange.start.year, customRange.start.month, customRange.start.day);
+      to = DateTime(customRange.end.year, customRange.end.month, customRange.end.day, 23, 59, 59, 999);
+      chart = await _customRangeBuckets(from, to, languageCode);
     } else {
       from = DateTime(anchor.year, anchor.month, anchor.day);
       to = from
@@ -201,6 +210,46 @@ class FinanceRepositoryImpl implements FinanceRepository {
   String _dayLabel(DateTime d, String languageCode) {
     final loc = languageCode == 'en' ? 'en_US' : 'id_ID';
     return DateFormat.d(loc).format(d);
+  }
+
+  Future<List<ChartPoint>> _customRangeBuckets(
+    DateTime from,
+    DateTime to,
+    String languageCode,
+  ) async {
+    final diff = to.difference(from).inDays;
+    final map = <DateTime, ChartPoint>{};
+    for (var i = 0; i <= diff; i++) {
+      final d = DateTime(from.year, from.month, from.day).add(Duration(days: i));
+      map[d] = ChartPoint(label: _dayLabel(d, languageCode), income: 0, expense: 0);
+    }
+
+    void addMoney(List<Map<String, Object?>> rows, bool isIncome) {
+      for (final row in rows) {
+        final date = DateTime.parse(row['date_iso']! as String);
+        final key = DateTime(date.year, date.month, date.day);
+        if (!map.containsKey(key)) continue;
+        final existing = map[key]!;
+        final v = (row['amount']! as num).toDouble();
+        map[key] = ChartPoint(
+          label: existing.label,
+          income: existing.income + (isIncome ? v : 0),
+          expense: existing.expense + (isIncome ? 0 : v),
+        );
+      }
+    }
+
+    final String fromIso = from.toIso8601String();
+    final String toIso = to.toIso8601String();
+    
+    final incomes = await _db.rawQuery('SELECT * FROM incomes WHERE date_iso >= ? AND date_iso <= ?', [fromIso, toIso]);
+    final expenses = await _db.rawQuery('SELECT * FROM expenses WHERE date_iso >= ? AND date_iso <= ?', [fromIso, toIso]);
+
+    addMoney(incomes, true);
+    addMoney(expenses, false);
+    
+    final sorted = map.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
+    return sorted.map((e) => e.value).toList();
   }
 
   Future<List<ChartPoint>> _monthlyDailyBuckets(

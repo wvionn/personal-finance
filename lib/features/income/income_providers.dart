@@ -6,8 +6,9 @@ import '../../domain/entities/income.dart';
 import '../../domain/entities/quick_action.dart';
 
 final incomeSearchProvider = StateProvider<String>((ref) => '');
-final incomeAccountTypeFilterProvider =
-    StateProvider<String>((ref) => kAccountTypeAll);
+final incomeAccountTypeFilterProvider = StateProvider<String>(
+  (ref) => kAccountTypeAll,
+);
 
 final incomeListProvider = FutureProvider<List<Income>>((ref) async {
   final repo = ref.watch(financeRepositoryProvider);

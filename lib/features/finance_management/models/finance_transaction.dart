@@ -70,7 +70,8 @@ class FinanceTransaction {
       },
       description: (json['description'] as String?)?.trim() ?? '',
       createdAt:
-          DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+          DateTime.now(),
     );
   }
 

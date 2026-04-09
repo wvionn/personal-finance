@@ -135,9 +135,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get noChartData => 'Belum ada data';
 
   @override
-  String get wishlistPlanned => 'Direncanakan';
-
-  @override
   String get wishlistPurchased => 'Dibeli';
 
   @override
@@ -240,6 +237,13 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get quickIncomeTitle => 'Pemasukan cepat';
+
+  @override
+  String get maxQuickActionsNote => 'Maks 6 aksi';
+
+  @override
+  String get quickActionsLimitReached =>
+      'Kamu hanya bisa menambahkan sampai 6 aksi cepat.';
 
   @override
   String get greetingMorning => 'Selamat pagi,';

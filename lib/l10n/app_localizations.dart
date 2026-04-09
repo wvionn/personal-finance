@@ -350,12 +350,6 @@ abstract class AppLocalizations {
   /// **'No data'**
   String get noChartData;
 
-  /// No description provided for @wishlistPlanned.
-  ///
-  /// In en, this message translates to:
-  /// **'Planned'**
-  String get wishlistPlanned;
-
   /// No description provided for @wishlistPurchased.
   ///
   /// In en, this message translates to:
@@ -559,6 +553,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Quick income'**
   String get quickIncomeTitle;
+
+  /// No description provided for @maxQuickActionsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Max 6 actions'**
+  String get maxQuickActionsNote;
+
+  /// No description provided for @quickActionsLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'You can only add up to 6 quick actions.'**
+  String get quickActionsLimitReached;
 
   /// No description provided for @greetingMorning.
   ///

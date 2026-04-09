@@ -242,6 +242,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickIncomeTitle => 'Quick income';
 
   @override
+  String get maxQuickActionsNote => 'Max 6 actions';
+
+  @override
+  String get quickActionsLimitReached =>
+      'You can only add up to 6 quick actions.';
+
+  @override
   String get greetingMorning => 'Good morning,';
 
   @override

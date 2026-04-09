@@ -57,8 +57,11 @@ class FinanceController extends ChangeNotifier {
 
   ({double income, double expense, double net}) get weeklySummary {
     final now = DateTime.now();
-    final start = DateTime(now.year, now.month, now.day)
-        .subtract(const Duration(days: 6));
+    final start = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(const Duration(days: 6));
     return _cashFlowForRange(start, now);
   }
 
@@ -115,10 +118,7 @@ class FinanceController extends ChangeNotifier {
       return (success: false, error: 'Opening balance is invalid.');
     }
     if (openingBalance < 0) {
-      return (
-        success: false,
-        error: 'Opening balance cannot be negative.',
-      );
+      return (success: false, error: 'Opening balance cannot be negative.');
     }
 
     final account = FinanceAccount(

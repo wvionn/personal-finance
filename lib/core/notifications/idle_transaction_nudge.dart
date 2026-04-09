@@ -14,7 +14,8 @@ class IdleTransactionNudge {
     if (await repo.hasAnyTransactionOn(now)) return;
 
     final prefs = await SharedPreferences.getInstance();
-    final ymd = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final ymd =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     if (prefs.getString(_prefKey) == ymd) return;
 
     await prefs.setString(_prefKey, ymd);

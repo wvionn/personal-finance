@@ -13,53 +13,59 @@ class CsvExportService {
   static List<List<String>> _incomeRows(List<Income> items) {
     return [
       ['incomes', 'id', 'amount', 'source', 'date', 'account_type', 'note'],
-      ...items.map((i) => [
-            'income',
-            i.id,
-            i.amount.toString(),
-            i.source,
-            i.date.toIso8601String(),
-            i.accountType,
-            i.note ?? '',
-          ]),
+      ...items.map(
+        (i) => [
+          'income',
+          i.id,
+          i.amount.toString(),
+          i.source,
+          i.date.toIso8601String(),
+          i.accountType,
+          i.note ?? '',
+        ],
+      ),
     ];
   }
 
   static List<List<String>> _expenseRows(List<Expense> items) {
     return [
-      [
-        'expenses',
-        'id',
-        'amount',
-        'category',
-        'date',
-        'account_type',
-        'note',
-      ],
-      ...items.map((e) => [
-            'expense',
-            e.id,
-            e.amount.toString(),
-            e.category,
-            e.date.toIso8601String(),
-            e.accountType,
-            e.note ?? '',
-          ]),
+      ['expenses', 'id', 'amount', 'category', 'date', 'account_type', 'note'],
+      ...items.map(
+        (e) => [
+          'expense',
+          e.id,
+          e.amount.toString(),
+          e.category,
+          e.date.toIso8601String(),
+          e.accountType,
+          e.note ?? '',
+        ],
+      ),
     ];
   }
 
   static List<List<String>> _wishRows(List<WishlistItem> items) {
     return [
-      ['wishlist', 'id', 'name', 'estimated_price', 'priority', 'purchased', 'purchased_at'],
-      ...items.map((w) => [
-            'wish',
-            w.id,
-            w.name,
-            w.estimatedPrice.toString(),
-            w.priority.name,
-            w.purchased.toString(),
-            w.purchasedAt?.toIso8601String() ?? '',
-          ]),
+      [
+        'wishlist',
+        'id',
+        'name',
+        'estimated_price',
+        'priority',
+        'purchased',
+        'purchased_at',
+      ],
+      ...items.map(
+        (w) => [
+          'wish',
+          w.id,
+          w.name,
+          w.estimatedPrice.toString(),
+          w.priority.name,
+          w.purchased.toString(),
+          w.purchasedAt?.toIso8601String() ?? '',
+        ],
+      ),
     ];
   }
 
@@ -74,7 +80,10 @@ class CsvExportService {
     return chunks.map(converter.convert).join('\n');
   }
 
-  static Future<void> shareCsv(String csv, {String filename = 'catat_uang_export.csv'}) async {
+  static Future<void> shareCsv(
+    String csv, {
+    String filename = 'catat_uang_export.csv',
+  }) async {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/$filename');
     await file.writeAsString(csv);
